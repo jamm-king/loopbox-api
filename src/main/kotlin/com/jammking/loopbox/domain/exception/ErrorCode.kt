@@ -1,0 +1,33 @@
+package com.jammking.loopbox.domain.exception
+
+
+
+enum class ErrorCode {
+
+    // --- Not found ---
+    PROJECT_NOT_FOUND,
+    MUSIC_NOT_FOUND,
+    VERSION_NOT_FOUND,
+    TASK_NOT_FOUND,
+    RESOURCE_NOT_FOUND,
+
+    // --- Inconsistent state ---
+    INCONSISTENT_PROJECT_MUSIC_RELATION,
+    INCONSISTENT_MUSIC_TASK_RELATION,
+
+    // --- State violation ---
+    INVALID_PROJECT_STATE,
+    INVALID_MUSIC_STATE,
+    INVALID_MUSIC_VERSION_STATE,
+    DUPLICATE_PROJECT_ID,
+    DUPLICATE_MUSIC_ID,
+    DUPLICATE_VERSION_ID,
+
+    // --- Validation ---
+    INVALID_PROJECT_TITLE,
+    INVALID_MUSIC_AI_PROVIDER,
+    INVALID_AUDIO_FILE_PATH,
+
+    // --- Fallback ---
+    INTERNAL_SERVER_ERROR
+}
