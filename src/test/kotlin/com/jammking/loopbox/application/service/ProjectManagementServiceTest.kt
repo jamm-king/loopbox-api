@@ -15,7 +15,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
-import org.mockito.Mockito.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.junit.jupiter.MockitoExtension
 import java.util.*
 
@@ -42,14 +45,14 @@ class ProjectManagementServiceTest {
         // Given
         val title = "Test Project"
         val project = Project(title = title)
-        `when`(projectRepository.save(anyProject())).thenReturn(project)
+        whenever(projectRepository.save(any())).thenReturn(project)
 
         // When
         val result = projectManagementService.createProject(title)
 
         // Then
         assertEquals(title, result.title)
-        verify(projectRepository).save(anyProject())
+        verify(projectRepository).save(any())
     }
 
     @Test
@@ -59,11 +62,11 @@ class ProjectManagementServiceTest {
         val project = Project(id = projectId, title = "Test Project")
         val musicId = MusicId("music-1")
         
-        val music = mock(Music::class.java)
-        `when`(music.id).thenReturn(musicId)
+        val music = mock<Music>()
+        whenever(music.id).thenReturn(musicId)
         
-        `when`(projectRepository.findById(projectId)).thenReturn(project)
-        `when`(musicRepository.findByProjectId(projectId)).thenReturn(listOf(music))
+        whenever(projectRepository.findById(projectId)).thenReturn(project)
+        whenever(musicRepository.findByProjectId(projectId)).thenReturn(listOf(music))
 
         // When
         projectManagementService.deleteProject(projectId)
@@ -79,7 +82,7 @@ class ProjectManagementServiceTest {
     fun `deleteProject should throw exception when project not found`() {
         // Given
         val projectId = ProjectId("non-existent-id")
-        `when`(projectRepository.findById(projectId)).thenReturn(null)
+        whenever(projectRepository.findById(projectId)).thenReturn(null)
 
         // When & Then
         assertThrows(ProjectNotFoundException::class.java) {
@@ -95,8 +98,8 @@ class ProjectManagementServiceTest {
         val newTitle = "New Title"
         val project = Project(id = projectId, title = oldTitle)
         
-        `when`(projectRepository.findById(projectId)).thenReturn(project)
-        `when`(projectRepository.save(anyProject())).thenAnswer { it.arguments[0] }
+        whenever(projectRepository.findById(projectId)).thenReturn(project)
+        whenever(projectRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
         projectManagementService.renameTitle(projectId, newTitle)
@@ -106,8 +109,4 @@ class ProjectManagementServiceTest {
         verify(projectRepository).save(project)
     }
 
-    private fun anyProject(): Project {
-        org.mockito.Mockito.any(Project::class.java)
-        return Project(title = "Any Project")
-    }
 }

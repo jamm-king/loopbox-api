@@ -7,8 +7,8 @@ import com.jammking.loopbox.application.port.`in`.ProjectQueryUseCase
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import org.junit.jupiter.api.Test
-import org.mockito.BDDMockito.given
-import org.mockito.Mockito.verify
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -45,7 +45,7 @@ class ProjectControllerTest {
         val title = "New Project"
         val request = CreateProjectRequest(title = title)
         val project = Project(title = title)
-        given(projectManagementUseCase.createProject(title)).willReturn(project)
+        whenever(projectManagementUseCase.createProject(title)).thenReturn(project)
 
         // When & Then
         mockMvc.perform(post("/api/project")
@@ -60,7 +60,7 @@ class ProjectControllerTest {
         // Given
         val projectId = "project-1"
         val project = Project(id = ProjectId(projectId), title = "Test Project")
-        given(projectQueryUseCase.getProjectDetail(ProjectId(projectId))).willReturn(project)
+        whenever(projectQueryUseCase.getProjectDetail(ProjectId(projectId))).thenReturn(project)
 
         // When & Then
         mockMvc.perform(get("/api/project/{projectId}", projectId))
@@ -74,7 +74,7 @@ class ProjectControllerTest {
         // Given
         val project1 = Project(id = ProjectId("p1"), title = "Project 1")
         val project2 = Project(id = ProjectId("p2"), title = "Project 2")
-        given(projectQueryUseCase.getAllProjects()).willReturn(listOf(project1, project2))
+        whenever(projectQueryUseCase.getAllProjects()).thenReturn(listOf(project1, project2))
 
         // When & Then
         mockMvc.perform(get("/api/project"))
