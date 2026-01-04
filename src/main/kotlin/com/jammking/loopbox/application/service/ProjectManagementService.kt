@@ -35,9 +35,13 @@ class ProjectManagementService(
         val musics = musicRepository.findByProjectId(projectId)
 
         musics.forEach { music ->
+            val tasks = taskRepository.findByMusicId(music.id)
+            tasks.forEach { task ->
+                task.markCanceled()
+                taskRepository.save(task)
+            }
             musicRepository.deleteById(music.id)
             versionRepository.deleteByMusicId(music.id)
-            taskRepository.deleteByMusicId(music.id)
         }
         projectRepository.deleteById(projectId)
         log.info("Deleted project: projectId=${projectId.value}")

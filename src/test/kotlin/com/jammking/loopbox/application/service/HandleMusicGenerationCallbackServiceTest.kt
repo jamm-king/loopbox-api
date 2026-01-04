@@ -31,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -164,5 +165,36 @@ class HandleMusicGenerationCallbackServiceTest {
         val versionCaptor = argumentCaptor<MusicVersion>()
         verify(versionRepository).save(versionCaptor.capture())
         assertEquals(MusicVersionStatus.GENERATION_FAILED, versionCaptor.firstValue.status)
+    }
+
+    @Test
+    fun `handle should ignore callback when task is canceled`() {
+        // Given
+        val musicId = com.jammking.loopbox.domain.entity.music.MusicId("music-1")
+        val provider = MusicAiProvider.SUNO
+        val externalId = ExternalId("external-1")
+        val command = HandleMusicGenerationCallbackUseCase.Command(
+            provider = provider,
+            status = HandleMusicGenerationCallbackUseCase.Command.Status.COMPLETED,
+            externalId = externalId,
+            tracks = emptyList(),
+            message = null
+        )
+        val task = MusicGenerationTask(
+            musicId = musicId,
+            externalId = externalId,
+            status = MusicGenerationTaskStatus.CANCELED,
+            provider = provider
+        )
+
+        whenever(taskRepository.findByProviderAndExternalId(provider, externalId)).thenReturn(task)
+
+        // When
+        handleMusicGenerationCallbackService.handle(command)
+
+        // Then
+        verify(musicRepository, never()).findById(any())
+        verify(notificationPort, never()).notifyVersionGenerationCompleted(any(), any(), any())
+        verify(notificationPort, never()).notifyVersionGenerationFailed(any(), any())
     }
 }

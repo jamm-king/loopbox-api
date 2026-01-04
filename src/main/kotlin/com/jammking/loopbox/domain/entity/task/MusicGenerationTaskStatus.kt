@@ -4,5 +4,6 @@ enum class MusicGenerationTaskStatus {
     REQUESTED,
     GENERATING,
     COMPLETED,
-    FAILED
+    FAILED,
+    CANCELED
 }

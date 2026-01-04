@@ -84,8 +84,16 @@ class MusicManagementServiceTest {
         val projectId = ProjectId("project-1")
         val project = Project(id = projectId, title = "Project", status = ProjectStatus.MUSIC_READY)
         val music = Music(id = MusicId("music-1"), projectId = projectId)
+        val task = MusicGenerationTask(
+            musicId = music.id,
+            externalId = ExternalId("external-1"),
+            status = MusicGenerationTaskStatus.GENERATING,
+            provider = MusicAiProvider.SUNO
+        )
         whenever(musicRepository.findById(music.id)).thenReturn(music)
         whenever(projectRepository.findById(projectId)).thenReturn(project)
+        whenever(taskRepository.findByMusicId(music.id)).thenReturn(listOf(task))
+        whenever(taskRepository.save(any())).thenAnswer { it.arguments[0] }
         whenever(musicRepository.findByProjectId(projectId)).thenReturn(emptyList())
         whenever(projectRepository.save(any())).thenAnswer { it.arguments[0] }
 
@@ -95,7 +103,9 @@ class MusicManagementServiceTest {
         // Then
         verify(musicRepository).deleteById(music.id)
         verify(versionRepository).deleteByMusicId(music.id)
-        verify(taskRepository).deleteByMusicId(music.id)
+        val taskCaptor = argumentCaptor<MusicGenerationTask>()
+        verify(taskRepository).save(taskCaptor.capture())
+        assertEquals(MusicGenerationTaskStatus.CANCELED, taskCaptor.firstValue.status)
         verify(projectRepository).save(project)
         assertEquals(ProjectStatus.DRAFT, project.status)
     }

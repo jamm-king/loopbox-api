@@ -48,9 +48,14 @@ class MusicManagementService(
         val project = projectRepository.findById(music.projectId)
             ?: throw ProjectMusicInconsistentStateException.projectMissingForMusic(music.id, music.projectId)
 
+        val tasks = taskRepository.findByMusicId(music.id)
+        tasks.forEach { task ->
+            task.markCanceled()
+            taskRepository.save(task)
+        }
+
         musicRepository.deleteById(music.id)
         versionRepository.deleteByMusicId(music.id)
-        taskRepository.deleteByMusicId(music.id)
         log.info("Deleted music: ${music.id.value}")
 
         val musicList = musicRepository.findByProjectId(music.projectId)

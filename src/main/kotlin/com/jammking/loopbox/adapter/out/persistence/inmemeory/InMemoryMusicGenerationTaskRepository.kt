@@ -6,8 +6,9 @@ import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskId
-import com.jammking.loopbox.domain.exception.task.MusicGenerationTaskNotFoundException
+import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskStatus
 import org.springframework.stereotype.Repository
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 @Repository
@@ -33,5 +34,13 @@ class InMemoryMusicGenerationTaskRepository: MusicGenerationTaskRepository {
     override fun deleteByMusicId(musicId: MusicId) {
         val targetIds = store.values.filter { it.musicId == musicId }.map { it.id }
         targetIds.forEach { store.remove(it.value) }
+    }
+
+    override fun deleteByStatusBefore(status: MusicGenerationTaskStatus, before: Instant): Int {
+        val targetIds = store.values
+            .filter { it.status == status && it.updatedAt.isBefore(before) }
+            .map { it.id }
+        targetIds.forEach { store.remove(it.value) }
+        return targetIds.size
     }
 }
