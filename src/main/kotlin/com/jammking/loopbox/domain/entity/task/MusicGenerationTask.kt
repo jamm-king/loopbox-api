@@ -47,6 +47,11 @@ class MusicGenerationTask(
         this.updatedAt = now
     }
 
+    fun markCanceled(now: Instant = Instant.now()) {
+        this.status = MusicGenerationTaskStatus.CANCELED
+        this.updatedAt = now
+    }
+
     fun copy(
         id: MusicGenerationTaskId = this.id,
         musicId: MusicId = this.musicId,
@@ -71,4 +76,5 @@ class MusicGenerationTask(
     fun isGenerating() = status == MusicGenerationTaskStatus.GENERATING
     fun isCompleted() = status == MusicGenerationTaskStatus.COMPLETED
     fun isFailed() = status == MusicGenerationTaskStatus.FAILED
+    fun isCanceled() = status == MusicGenerationTaskStatus.CANCELED
 }

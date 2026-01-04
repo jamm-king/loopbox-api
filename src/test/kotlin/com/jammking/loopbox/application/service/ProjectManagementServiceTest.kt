@@ -3,12 +3,16 @@ package com.jammking.loopbox.application.service
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
+import com.jammking.loopbox.domain.entity.music.Music
+import com.jammking.loopbox.domain.entity.music.MusicId
+import com.jammking.loopbox.domain.entity.task.ExternalId
+import com.jammking.loopbox.domain.entity.task.MusicAiProvider
+import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
+import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskStatus
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
 import com.jammking.loopbox.domain.port.out.MusicRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
-import com.jammking.loopbox.domain.entity.music.Music
-import com.jammking.loopbox.domain.entity.music.MusicId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -16,7 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.junit.jupiter.MockitoExtension
@@ -62,11 +66,18 @@ class ProjectManagementServiceTest {
         val project = Project(id = projectId, title = "Test Project")
         val musicId = MusicId("music-1")
         
-        val music = mock<Music>()
-        whenever(music.id).thenReturn(musicId)
+        val music = Music(id = musicId, projectId = projectId)
+        val task = MusicGenerationTask(
+            musicId = musicId,
+            externalId = ExternalId("external-1"),
+            status = MusicGenerationTaskStatus.GENERATING,
+            provider = MusicAiProvider.SUNO
+        )
         
         whenever(projectRepository.findById(projectId)).thenReturn(project)
         whenever(musicRepository.findByProjectId(projectId)).thenReturn(listOf(music))
+        whenever(taskRepository.findByMusicId(musicId)).thenReturn(listOf(task))
+        whenever(taskRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
         projectManagementService.deleteProject(projectId)
@@ -74,7 +85,9 @@ class ProjectManagementServiceTest {
         // Then
         verify(musicRepository).deleteById(musicId)
         verify(versionRepository).deleteByMusicId(musicId)
-        verify(taskRepository).deleteByMusicId(musicId)
+        val taskCaptor = argumentCaptor<MusicGenerationTask>()
+        verify(taskRepository).save(taskCaptor.capture())
+        assertEquals(MusicGenerationTaskStatus.CANCELED, taskCaptor.firstValue.status)
         verify(projectRepository).deleteById(projectId)
     }
 

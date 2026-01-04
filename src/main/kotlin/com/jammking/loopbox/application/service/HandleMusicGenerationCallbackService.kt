@@ -43,6 +43,13 @@ class HandleMusicGenerationCallbackService(
         val externalId = command.externalId
 
         val task = requireTaskByProviderAndExternalId(provider, externalId)
+        if (task.isCanceled()) {
+            log.info(
+                "Ignoring callback for canceled task: taskId={}, provider={}, externalId={}, status={}",
+                task.id.value, provider, externalId.value, command.status
+            )
+            return
+        }
         val music = requireMusicByTask(task)
         val project = requireProjectByMusic(music)
 
