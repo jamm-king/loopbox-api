@@ -1,4 +1,4 @@
-package com.jammking.loopbox.application.port.out.router
+package com.jammking.loopbox.adapter.out.router
 
 import com.jammking.loopbox.application.port.out.MusicAiClient
 import com.jammking.loopbox.application.port.out.MusicAiRouter
