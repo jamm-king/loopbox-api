@@ -4,6 +4,9 @@ import com.jammking.loopbox.application.port.`in`.ProjectManagementUseCase
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
+import com.jammking.loopbox.domain.port.out.ImageGenerationTaskRepository
+import com.jammking.loopbox.domain.port.out.ImageRepository
+import com.jammking.loopbox.domain.port.out.ImageVersionRepository
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
 import com.jammking.loopbox.domain.port.out.MusicRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
@@ -15,8 +18,11 @@ import org.springframework.stereotype.Service
 class ProjectManagementService(
     private val projectRepository: ProjectRepository,
     private val musicRepository: MusicRepository,
-    private val versionRepository: MusicVersionRepository,
-    private val taskRepository: MusicGenerationTaskRepository
+    private val musicVersionRepository: MusicVersionRepository,
+    private val musicTaskRepository: MusicGenerationTaskRepository,
+    private val imageRepository: ImageRepository,
+    private val imageVersionRepository: ImageVersionRepository,
+    private val imageTaskRepository: ImageGenerationTaskRepository
 ): ProjectManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -33,15 +39,26 @@ class ProjectManagementService(
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)
         val musics = musicRepository.findByProjectId(projectId)
+        val images = imageRepository.findByProjectId(projectId)
 
         musics.forEach { music ->
-            val tasks = taskRepository.findByMusicId(music.id)
+            val tasks = musicTaskRepository.findByMusicId(music.id)
             tasks.forEach { task ->
                 task.markCanceled()
-                taskRepository.save(task)
+                musicTaskRepository.save(task)
             }
             musicRepository.deleteById(music.id)
-            versionRepository.deleteByMusicId(music.id)
+            musicVersionRepository.deleteByMusicId(music.id)
+        }
+
+        images.forEach { image ->
+            val tasks = imageTaskRepository.findByImageId(image.id)
+            tasks.forEach { task ->
+                task.markCanceled()
+                imageTaskRepository.save(task)
+            }
+            imageRepository.deleteById(image.id)
+            imageVersionRepository.deleteByImageId(image.id)
         }
         projectRepository.deleteById(projectId)
         log.info("Deleted project: projectId=${projectId.value}")
