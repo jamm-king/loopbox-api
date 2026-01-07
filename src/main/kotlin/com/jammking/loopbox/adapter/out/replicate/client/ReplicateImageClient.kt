@@ -71,7 +71,7 @@ class ReplicateImageClient(
 
                 if (!response.isSuccessful) {
                     log.error("Replicate prediction error: HTTP {}, body={}", response.code, body)
-                    throw ImageAiClientException.invalidHttpCode(provider, response.code)
+                    throw ImageAiClientException.invalidHttpCodeWithBody(provider, response.code, body)
                 }
 
                 log.debug("Replicate prediction raw response: {}", body)
