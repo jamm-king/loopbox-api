@@ -39,10 +39,16 @@ class ReplicateImageClient(
 
     override fun generate(command: ImageAiClient.GenerateCommand): ImageAiClient.GenerateResult {
         val input = toReplicateInput(command.config)
+        val webhook = callbackUrl.trim()
+        val isHttpsWebhook = webhook.startsWith("https://", ignoreCase = true)
+        if (webhook.isNotEmpty() && !isHttpsWebhook) {
+            log.warn("Replicate webhook must be https; skipping webhook. url={}", webhook)
+        }
+
         val requestBodyObj = ReplicatePredictionRequest(
             input = input,
-            webhook = callbackUrl.ifBlank { null },
-            webhookEventsFilter = if(callbackUrl.isBlank()) null else listOf("completed", "failed")
+            webhook = if (isHttpsWebhook) webhook else null,
+            webhookEventsFilter = if (isHttpsWebhook) listOf("completed") else null
         )
 
         val json = try {
