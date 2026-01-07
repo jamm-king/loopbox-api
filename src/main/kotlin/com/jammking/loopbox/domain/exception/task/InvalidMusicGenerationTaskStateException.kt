@@ -12,6 +12,6 @@ class InvalidMusicGenerationTaskStateException(
     val currentStatus: MusicGenerationTaskStatus,
     val attemptedAction: String
 ): StateViolationException(
-    errorCode = ErrorCode.TASK_NOT_FOUND,
+    errorCode = ErrorCode.INVALID_TASK_STATE,
     message = "State violation: Cannot $attemptedAction when music generation task is $currentStatus: taskId=${taskId.value}, musicId=${musicId.value}"
 )
