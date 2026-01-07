@@ -26,6 +26,12 @@ class ImageAiClientException(
                 message = "${provider.name} returned invalid http code: $code"
             )
 
+        fun invalidHttpCodeWithBody(provider: ImageAiProvider, code: Int, body: String) =
+            ImageAiClientException(
+                code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                message = "${provider.name} returned invalid http code: $code, body=$body"
+            )
+
         // --- PROTOCOL_VIOLATION ---
 
         fun invalidSystemCode(provider: ImageAiProvider, code: Int) =

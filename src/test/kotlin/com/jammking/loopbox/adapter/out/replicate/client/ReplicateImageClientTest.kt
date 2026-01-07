@@ -43,7 +43,7 @@ class ReplicateImageClientTest {
             val client = ReplicateImageClient(
                 apiBaseUrl = "http://localhost:${server.address.port}",
                 apiToken = "api-token",
-                callbackUrl = "http://callback",
+                callbackUrl = "https://callback",
                 model = "google/imagen-4",
                 objectMapper = objectMapper
             )
@@ -64,8 +64,8 @@ class ReplicateImageClientTest {
             assertEquals("16:9", request.input.aspectRatio)
             assertEquals("jpg", request.input.outputFormat)
             assertEquals("block_only_high", request.input.safetyFilterLevel)
-            assertEquals("http://callback", request.webhook)
-            assertEquals(listOf("completed", "failed"), request.webhookEventsFilter)
+            assertEquals("https://callback", request.webhook)
+            assertEquals(listOf("completed"), request.webhookEventsFilter)
         } finally {
             server.stop(0)
         }
