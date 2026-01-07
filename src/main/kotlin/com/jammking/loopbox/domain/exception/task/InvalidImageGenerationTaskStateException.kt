@@ -12,6 +12,6 @@ class InvalidImageGenerationTaskStateException(
     val currentStatus: ImageGenerationTaskStatus,
     val attemptedAction: String
 ): StateViolationException(
-    errorCode = ErrorCode.TASK_NOT_FOUND,
+    errorCode = ErrorCode.INVALID_TASK_STATE,
     message = "State violation: Cannot $attemptedAction when image generation task is $currentStatus: taskId=${taskId.value}, imageId=${imageId.value}"
 )

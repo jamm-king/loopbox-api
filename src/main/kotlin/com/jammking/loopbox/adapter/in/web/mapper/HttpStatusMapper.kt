@@ -23,6 +23,7 @@ object HttpStatusMapper {
         ErrorCode.INVALID_MUSIC_VERSION_STATE -> HttpStatus.CONFLICT
         ErrorCode.INVALID_IMAGE_STATE -> HttpStatus.CONFLICT
         ErrorCode.INVALID_IMAGE_VERSION_STATE -> HttpStatus.CONFLICT
+        ErrorCode.INVALID_TASK_STATE -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_PROJECT_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_MUSIC_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_VERSION_ID -> HttpStatus.CONFLICT
