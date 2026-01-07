@@ -15,6 +15,7 @@ object HttpStatusMapper {
         ErrorCode.RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND
 
         ErrorCode.INCONSISTENT_PROJECT_MUSIC_RELATION -> HttpStatus.CONFLICT
+        ErrorCode.INCONSISTENT_PROJECT_IMAGE_RELATION -> HttpStatus.CONFLICT
         ErrorCode.INCONSISTENT_MUSIC_TASK_RELATION -> HttpStatus.CONFLICT
         ErrorCode.INCONSISTENT_IMAGE_TASK_RELATION -> HttpStatus.CONFLICT
 
