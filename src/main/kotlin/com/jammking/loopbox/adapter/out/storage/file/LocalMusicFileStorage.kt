@@ -1,5 +1,7 @@
 package com.jammking.loopbox.adapter.out.storage.file
 
+import com.jammking.loopbox.application.exception.MusicFileStorageException
+import com.jammking.loopbox.application.exception.PortErrorCode
 import com.jammking.loopbox.application.exception.ResolveLocalAudioPortException
 import com.jammking.loopbox.application.port.`in`.GetMusicVersionAudioUseCase
 import com.jammking.loopbox.application.port.out.MusicFileStorage
@@ -39,7 +41,10 @@ class LocalMusicFileStorage(
             Files.createDirectories(dir)
         } catch(e: Exception) {
             log.error("Failed To create directories for path={}", dir.toAbsolutePath(), e)
-            return ""
+            throw MusicFileStorageException(
+                code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                message = "Failed to create audio directory: ${dir.toAbsolutePath()}"
+            )
         }
 
         val fileName = "${versionId.value}.mp3"
@@ -58,13 +63,19 @@ class LocalMusicFileStorage(
                         "Failed to download audio. url={}, code={}, message={}",
                         remoteUrl, response.code, response.message
                     )
-                    return ""
+                    throw MusicFileStorageException(
+                        code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                        message = "Failed to download audio. url=$remoteUrl, code=${response.code}"
+                    )
                 }
 
                 val body = response.body
                 if(body == null) {
                     log.warn("Empty body when downloading audio. url={}", remoteUrl)
-                    return ""
+                    throw MusicFileStorageException(
+                        code = PortErrorCode.PROTOCOL_VIOLATION,
+                        message = "Empty body when downloading audio. url=$remoteUrl"
+                    )
                 }
 
                 body.byteStream().use { input ->
@@ -80,9 +91,14 @@ class LocalMusicFileStorage(
 
                 target.toString()
             }
+        } catch(e: MusicFileStorageException) {
+            throw e
         } catch(e: Exception) {
             log.error("Failed to download audio from url={}", remoteUrl, e)
-            ""
+            throw MusicFileStorageException(
+                code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                message = "Failed to download audio from url=$remoteUrl"
+            )
         }
     }
 

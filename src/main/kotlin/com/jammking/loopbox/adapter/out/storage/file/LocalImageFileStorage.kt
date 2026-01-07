@@ -1,5 +1,7 @@
 package com.jammking.loopbox.adapter.out.storage.file
 
+import com.jammking.loopbox.application.exception.ImageFileStorageException
+import com.jammking.loopbox.application.exception.PortErrorCode
 import com.jammking.loopbox.application.port.out.ImageFileStorage
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
@@ -35,7 +37,10 @@ class LocalImageFileStorage(
             Files.createDirectories(dir)
         } catch(e: Exception) {
             log.error("Failed To create directories for path={}", dir.toAbsolutePath(), e)
-            return ""
+            throw ImageFileStorageException(
+                code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                message = "Failed to create image directory: ${dir.toAbsolutePath()}"
+            )
         }
 
         val fileName = "${versionId.value}.png"
@@ -54,13 +59,19 @@ class LocalImageFileStorage(
                         "Failed to download image. url={}, code={}, message={}",
                         remoteUrl, response.code, response.message
                     )
-                    return ""
+                    throw ImageFileStorageException(
+                        code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                        message = "Failed to download image. url=$remoteUrl, code=${response.code}"
+                    )
                 }
 
                 val body = response.body
                 if(body == null) {
                     log.warn("Empty body when downloading image. url={}", remoteUrl)
-                    return ""
+                    throw ImageFileStorageException(
+                        code = PortErrorCode.PROTOCOL_VIOLATION,
+                        message = "Empty body when downloading image. url=$remoteUrl"
+                    )
                 }
 
                 body.byteStream().use { input ->
@@ -76,9 +87,14 @@ class LocalImageFileStorage(
 
                 target.toString()
             }
+        } catch(e: ImageFileStorageException) {
+            throw e
         } catch(e: Exception) {
             log.error("Failed to download image from url={}", remoteUrl, e)
-            ""
+            throw ImageFileStorageException(
+                code = PortErrorCode.TEMPORARY_UNAVAILABLE,
+                message = "Failed to download image from url=$remoteUrl"
+            )
         }
     }
 }
