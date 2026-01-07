@@ -1,5 +1,6 @@
 package com.jammking.loopbox.adapter.out.storage.file
 
+import com.jammking.loopbox.application.exception.MusicFileStorageException
 import com.jammking.loopbox.application.exception.ResolveLocalAudioPortException
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
@@ -47,7 +48,7 @@ class LocalMusicFileStorageTest {
     }
 
     @Test
-    fun `saveFromRemoteUrl should return empty when response is not successful`() {
+    fun `saveFromRemoteUrl should throw when response is not successful`() {
         val server = HttpServer.create(InetSocketAddress("localhost", 0), 0)
         server.createContext("/audio") { exchange ->
             exchange.sendResponseHeaders(500, -1)
@@ -57,15 +58,16 @@ class LocalMusicFileStorageTest {
 
         try {
             val storage = LocalMusicFileStorage(tempDir.toString())
-            val result = storage.saveFromRemoteUrl(
-                remoteUrl = "http://localhost:${server.address.port}/audio",
-                projectId = ProjectId("project-1"),
-                musicId = MusicId("music-1"),
-                versionId = MusicVersionId("version-1")
-            )
+            assertThrows(MusicFileStorageException::class.java) {
+                storage.saveFromRemoteUrl(
+                    remoteUrl = "http://localhost:${server.address.port}/audio",
+                    projectId = ProjectId("project-1"),
+                    musicId = MusicId("music-1"),
+                    versionId = MusicVersionId("version-1")
+                )
+            }
 
             val expectedPath = tempDir.resolve("project-1").resolve("music-1").resolve("version-1.mp3")
-            assertEquals("", result)
             assertEquals(false, Files.exists(expectedPath))
         } finally {
             server.stop(0)
