@@ -134,7 +134,8 @@ class ReplicateImageClient(
                 val status = prediction.status
                     ?: throw ImageAiClientException.invalidSchema(provider)
 
-                return toFetchResult(status, prediction.output, prediction.error)
+                val outputUrls = parseOutputUrls(prediction.output)
+                return toFetchResult(status, outputUrls, prediction.error)
             }
         } catch(e: IOException) {
             throw ImageAiClientException.unknown(provider)
@@ -200,6 +201,15 @@ class ReplicateImageClient(
                 images = null,
                 message = "Unknown status from Replicate: $status"
             )
+        }
+    }
+
+    private fun parseOutputUrls(output: Any?): List<String>? {
+        if (output == null) return null
+        return when(output) {
+            is String -> listOf(output)
+            is List<*> -> output.filterIsInstance<String>()
+            else -> null
         }
     }
 }

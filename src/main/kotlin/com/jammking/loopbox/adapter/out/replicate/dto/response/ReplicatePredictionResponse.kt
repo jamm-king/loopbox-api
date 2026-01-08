@@ -4,5 +4,5 @@ data class ReplicatePredictionResponse(
     val id: String? = null,
     val status: String? = null,
     val error: String? = null,
-    val output: List<String>? = null
+    val output: Any? = null
 )
