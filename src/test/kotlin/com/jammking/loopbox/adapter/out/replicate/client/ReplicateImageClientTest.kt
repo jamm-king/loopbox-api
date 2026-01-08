@@ -177,4 +177,101 @@ class ReplicateImageClientTest {
 
         assertEquals(PortErrorCode.PROTOCOL_VIOLATION, exception.code)
     }
+
+    @Test
+    fun `fetchResult should map succeeded to completed`() {
+        val response = """{"id":"task-123","status":"succeeded","output":["https://img.test/1.jpg"]}"""
+        val server = startServer("/v1/predictions/task-123", 200, response)
+
+        try {
+            val client = createClient(server, "http://callback")
+            val result = client.fetchResult(ImageAiClient.FetchResultCommand(ExternalId("task-123")))
+
+            assertEquals(ImageAiClient.FetchResult.FetchStatus.COMPLETED, result.status)
+            assertEquals("https://img.test/1.jpg", result.images?.first()?.remoteUrl)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `fetchResult should map succeeded without output to failed`() {
+        val response = """{"id":"task-123","status":"succeeded"}"""
+        val server = startServer("/v1/predictions/task-123", 200, response)
+
+        try {
+            val client = createClient(server, "http://callback")
+            val result = client.fetchResult(ImageAiClient.FetchResultCommand(ExternalId("task-123")))
+
+            assertEquals(ImageAiClient.FetchResult.FetchStatus.FAILED, result.status)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `fetchResult should map failed status`() {
+        val response = """{"id":"task-123","status":"failed","error":"boom"}"""
+        val server = startServer("/v1/predictions/task-123", 200, response)
+
+        try {
+            val client = createClient(server, "http://callback")
+            val result = client.fetchResult(ImageAiClient.FetchResultCommand(ExternalId("task-123")))
+
+            assertEquals(ImageAiClient.FetchResult.FetchStatus.FAILED, result.status)
+            assertEquals("boom", result.message)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `fetchResult should map processing status to generating`() {
+        val response = """{"id":"task-123","status":"processing"}"""
+        val server = startServer("/v1/predictions/task-123", 200, response)
+
+        try {
+            val client = createClient(server, "http://callback")
+            val result = client.fetchResult(ImageAiClient.FetchResultCommand(ExternalId("task-123")))
+
+            assertEquals(ImageAiClient.FetchResult.FetchStatus.GENERATING, result.status)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `fetchResult should map unknown status to unknown`() {
+        val response = """{"id":"task-123","status":"mystery"}"""
+        val server = startServer("/v1/predictions/task-123", 200, response)
+
+        try {
+            val client = createClient(server, "http://callback")
+            val result = client.fetchResult(ImageAiClient.FetchResultCommand(ExternalId("task-123")))
+
+            assertEquals(ImageAiClient.FetchResult.FetchStatus.UNKNOWN, result.status)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    private fun startServer(path: String, code: Int, response: String): HttpServer {
+        val server = HttpServer.create(InetSocketAddress("localhost", 0), 0)
+        server.createContext(path) { exchange ->
+            exchange.responseHeaders.add("Content-Type", "application/json")
+            exchange.sendResponseHeaders(code, response.toByteArray().size.toLong())
+            exchange.responseBody.use { it.write(response.toByteArray()) }
+        }
+        server.start()
+        return server
+    }
+
+    private fun createClient(server: HttpServer, callbackUrl: String): ReplicateImageClient =
+        ReplicateImageClient(
+            apiBaseUrl = "http://localhost:${server.address.port}",
+            apiToken = "api-token",
+            callbackUrl = callbackUrl,
+            model = "google/imagen-4",
+            objectMapper = objectMapper
+        )
 }

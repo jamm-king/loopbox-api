@@ -11,6 +11,7 @@ class ImageGenerationTask(
     val externalId: ExternalId,
     status: ImageGenerationTaskStatus = ImageGenerationTaskStatus.REQUESTED,
     val provider: ImageAiProvider,
+    pollCount: Int = 0,
     val createdAt: Instant = Instant.now(),
     updatedAt: Instant = Instant.now(),
     errorMessage: String? = null
@@ -23,6 +24,9 @@ class ImageGenerationTask(
         private set
 
     var errorMessage: String? = errorMessage
+        private set
+
+    var pollCount: Int = pollCount
         private set
 
     fun markGenerating(now: Instant = Instant.now()) {
@@ -52,12 +56,18 @@ class ImageGenerationTask(
         this.updatedAt = now
     }
 
+    fun incrementPollCount(now: Instant = Instant.now()) {
+        this.pollCount += 1
+        this.updatedAt = now
+    }
+
     fun copy(
         id: ImageGenerationTaskId = this.id,
         imageId: ImageId = this.imageId,
         externalTaskId: ExternalId = this.externalId,
         status: ImageGenerationTaskStatus = this.status,
         provider: ImageAiProvider = this.provider,
+        pollCount: Int = this.pollCount,
         createdAt: Instant = this.createdAt,
         updatedAt: Instant = this.updatedAt,
         errorMessage: String? = this.errorMessage
@@ -67,6 +77,7 @@ class ImageGenerationTask(
         status = status,
         provider = provider,
         externalId = externalTaskId,
+        pollCount = pollCount,
         createdAt = createdAt,
         updatedAt = updatedAt,
         errorMessage = errorMessage

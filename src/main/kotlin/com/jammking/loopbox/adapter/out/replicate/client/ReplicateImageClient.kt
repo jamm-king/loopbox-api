@@ -100,6 +100,47 @@ class ReplicateImageClient(
         }
     }
 
+    override fun fetchResult(command: ImageAiClient.FetchResultCommand): ImageAiClient.FetchResult {
+        val externalId = command.externalId.value
+        val baseUrl = apiBaseUrl.trimEnd('/')
+        val requestUrl = "$baseUrl/v1/predictions/$externalId"
+
+        val request = Request.Builder()
+            .url(requestUrl)
+            .header("Authorization", "Token $apiToken")
+            .build()
+
+        try {
+            client.newCall(request).execute().use { response ->
+                val body = try {
+                    response.body?.string()
+                } catch(e: IOException) {
+                    throw ImageAiClientException.invalidJson(provider)
+                } ?: throw ImageAiClientException.emptyResponseBody(provider)
+
+                if (!response.isSuccessful) {
+                    log.error("Replicate prediction fetch error: HTTP {}, body={}", response.code, body)
+                    throw ImageAiClientException.invalidHttpCodeWithBody(provider, response.code, body)
+                }
+
+                log.debug("Replicate prediction fetch raw response: {}", body)
+
+                val prediction = try {
+                    objectMapper.readValue(body, ReplicatePredictionResponse::class.java)
+                } catch(e: JsonProcessingException) {
+                    throw ImageAiClientException.invalidJson(provider)
+                }
+
+                val status = prediction.status
+                    ?: throw ImageAiClientException.invalidSchema(provider)
+
+                return toFetchResult(status, prediction.output, prediction.error)
+            }
+        } catch(e: IOException) {
+            throw ImageAiClientException.unknown(provider)
+        }
+    }
+
     private fun toReplicateInput(config: ImageConfig): ReplicateImageInput {
         val prompt = config.description?.takeIf { it.isNotBlank() }
             ?: throw ImageAiClientException.invalidPayloadState(provider)
@@ -122,5 +163,43 @@ class ReplicateImageClient(
         if (width * 3 == height * 4) return "4:3"
         if (width * 4 == height * 3) return "3:4"
         return "1:1"
+    }
+
+    private fun toFetchResult(
+        status: String,
+        output: List<String>?,
+        error: String?
+    ): ImageAiClient.FetchResult {
+        val normalized = status.lowercase()
+        return when(normalized) {
+            "succeeded" -> {
+                if (output.isNullOrEmpty()) {
+                    ImageAiClient.FetchResult(
+                        status = ImageAiClient.FetchResult.FetchStatus.FAILED,
+                        images = null,
+                        message = "Replicate returned succeeded without output"
+                    )
+                } else {
+                    ImageAiClient.FetchResult(
+                        status = ImageAiClient.FetchResult.FetchStatus.COMPLETED,
+                        images = output.map { ImageAiClient.ImageAsset(remoteUrl = it) }
+                    )
+                }
+            }
+            "failed", "canceled", "cancelled" -> ImageAiClient.FetchResult(
+                status = ImageAiClient.FetchResult.FetchStatus.FAILED,
+                images = null,
+                message = error
+            )
+            "starting", "processing" -> ImageAiClient.FetchResult(
+                status = ImageAiClient.FetchResult.FetchStatus.GENERATING,
+                images = null
+            )
+            else -> ImageAiClient.FetchResult(
+                status = ImageAiClient.FetchResult.FetchStatus.UNKNOWN,
+                images = null,
+                message = "Unknown status from Replicate: $status"
+            )
+        }
     }
 }
