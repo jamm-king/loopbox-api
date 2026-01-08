@@ -16,7 +16,7 @@ class StaticResourceConfig(
 
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         val baseUrl = normalizeBaseUrl(imageBaseUrl)
-        val basePath = Paths.get(imageBaseDir).toAbsolutePath().normalize().toUri().toString()
+        val basePath = toDirectoryUriString(imageBaseDir)
         registry.addResourceHandler("$baseUrl**")
             .addResourceLocations(basePath)
     }
@@ -26,5 +26,12 @@ class StaticResourceConfig(
         if (trimmed.isEmpty()) return "/"
         val withSlash = if (trimmed.startsWith("/")) trimmed else "/$trimmed"
         return if (withSlash.endsWith("/")) withSlash else "$withSlash/"
+    }
+
+    companion object {
+        internal fun toDirectoryUriString(dir: String): String {
+            val basePath = Paths.get(dir).toAbsolutePath().normalize().toUri().toString()
+            return if (basePath.endsWith("/")) basePath else "$basePath/"
+        }
     }
 }
