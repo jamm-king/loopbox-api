@@ -31,6 +31,15 @@ class InMemoryImageGenerationTaskRepository: ImageGenerationTaskRepository {
     override fun findByProviderAndExternalId(provider: ImageAiProvider, externalId: ExternalId): ImageGenerationTask? =
         store.values.firstOrNull { it.provider == provider && it.externalId == externalId }
 
+    override fun findByStatusAndProviderAndUpdatedBefore(
+        status: ImageGenerationTaskStatus,
+        provider: ImageAiProvider,
+        before: Instant
+    ): List<ImageGenerationTask> =
+        store.values.filter {
+            it.status == status && it.provider == provider && it.updatedAt.isBefore(before)
+        }
+
     override fun deleteByImageId(imageId: ImageId) {
         val targetIds = store.values.filter { it.imageId == imageId }.map { it.id }
         targetIds.forEach { store.remove(it.value) }

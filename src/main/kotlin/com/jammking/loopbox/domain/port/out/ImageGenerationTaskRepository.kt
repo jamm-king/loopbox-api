@@ -13,6 +13,11 @@ interface ImageGenerationTaskRepository {
     fun findById(id: ImageGenerationTaskId): ImageGenerationTask?
     fun findByImageId(imageId: ImageId): List<ImageGenerationTask>
     fun findByProviderAndExternalId(provider: ImageAiProvider, externalId: ExternalId): ImageGenerationTask?
+    fun findByStatusAndProviderAndUpdatedBefore(
+        status: ImageGenerationTaskStatus,
+        provider: ImageAiProvider,
+        before: Instant
+    ): List<ImageGenerationTask>
     fun deleteByImageId(imageId: ImageId)
     fun deleteByStatusBefore(status: ImageGenerationTaskStatus, before: Instant): Int
 }
