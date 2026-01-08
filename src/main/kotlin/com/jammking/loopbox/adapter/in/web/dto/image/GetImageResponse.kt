@@ -11,7 +11,9 @@ data class GetImageResponse(
         fun from(result: ImageQueryUseCase.GetImageDetailResult) =
             GetImageResponse(
                 image = result.image.toWeb(),
-                versions = result.versions.map { it.toWeb() }
+                versions = result.versions.map { version ->
+                    version.toWeb(result.versionUrls[version.id])
+                }
             )
     }
 }

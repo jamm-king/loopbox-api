@@ -23,7 +23,7 @@ class LocalImageAccessResolverTest {
 
         val resolver = LocalImageAccessResolver(
             imageBaseDir = imageDir.toString(),
-            imageBaseUrl = "https://cdn.example.com/static/image/"
+            imagePublicBaseUrl = "https://cdn.example.com/static/image/"
         )
 
         val result = resolver.resolve(file.toString())
@@ -43,7 +43,7 @@ class LocalImageAccessResolverTest {
 
         val resolver = LocalImageAccessResolver(
             imageBaseDir = imageDir.toString(),
-            imageBaseUrl = "https://cdn.example.com/static/image"
+            imagePublicBaseUrl = "https://cdn.example.com/static/image"
         )
 
         assertThrows(ResolveImageAccessPortException::class.java) {
@@ -59,7 +59,7 @@ class LocalImageAccessResolverTest {
 
         val resolver = LocalImageAccessResolver(
             imageBaseDir = imageDir.toString(),
-            imageBaseUrl = "https://cdn.example.com/static/image"
+            imagePublicBaseUrl = "https://cdn.example.com/static/image"
         )
 
         assertThrows(ResolveImageAccessPortException::class.java) {
