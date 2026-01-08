@@ -13,8 +13,8 @@ import java.nio.file.Paths
 class LocalImageAccessResolver(
     @Value("\${loopbox.storage.image-dir}")
     private val imageBaseDir: String,
-    @Value("\${loopbox.storage.image-base-url}")
-    private val imageBaseUrl: String
+    @Value("\${loopbox.storage.image-public-base-url}")
+    private val imagePublicBaseUrl: String
 ): ResolveImageAccessPort {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -33,7 +33,7 @@ class LocalImageAccessResolver(
         }
 
         val relative = basePath.relativize(filePath).toString().replace('\\', '/')
-        val baseUrl = imageBaseUrl.trimEnd('/')
+        val baseUrl = imagePublicBaseUrl.trimEnd('/')
 
         return ResolveImageAccessPort.ImageAccessTarget(
             url = "$baseUrl/$relative"
