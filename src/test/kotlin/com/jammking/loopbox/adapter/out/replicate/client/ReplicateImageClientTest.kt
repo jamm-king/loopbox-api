@@ -179,8 +179,24 @@ class ReplicateImageClientTest {
     }
 
     @Test
-    fun `fetchResult should map succeeded to completed`() {
+    fun `fetchResult should map succeeded list output to completed`() {
         val response = """{"id":"task-123","status":"succeeded","output":["https://img.test/1.jpg"]}"""
+        val server = startServer("/v1/predictions/task-123", 200, response)
+
+        try {
+            val client = createClient(server, "http://callback")
+            val result = client.fetchResult(ImageAiClient.FetchResultCommand(ExternalId("task-123")))
+
+            assertEquals(ImageAiClient.FetchResult.FetchStatus.COMPLETED, result.status)
+            assertEquals("https://img.test/1.jpg", result.images?.first()?.remoteUrl)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
+    fun `fetchResult should map succeeded string output to completed`() {
+        val response = """{"id":"task-123","status":"succeeded","output":"https://img.test/1.jpg"}"""
         val server = startServer("/v1/predictions/task-123", 200, response)
 
         try {
