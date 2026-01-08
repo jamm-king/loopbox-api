@@ -70,13 +70,18 @@ class ImageControllerTest {
             imageId = ImageId(imageId),
             config = config
         )
-        val result = ImageQueryUseCase.GetImageDetailResult(image, listOf(version))
+        val result = ImageQueryUseCase.GetImageDetailResult(
+            image = image,
+            versions = listOf(version),
+            versionUrls = mapOf(version.id to "http://localhost/static/image/v1.png")
+        )
         whenever(imageQueryUseCase.getImageDetail(ImageId(imageId))).thenReturn(result)
 
         mockMvc.perform(get("/api/project/{projectId}/image/{imageId}", projectId, imageId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value(imageId))
             .andExpect(jsonPath("$.versions[0].id").value("v1"))
+            .andExpect(jsonPath("$.versions[0].url").value("http://localhost/static/image/v1.png"))
             .andExpect(jsonPath("$.versions[0].config.description").value("Sunrise"))
             .andExpect(jsonPath("$.versions[0].config.width").value(1024))
     }

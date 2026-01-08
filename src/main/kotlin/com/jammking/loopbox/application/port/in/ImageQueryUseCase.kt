@@ -3,6 +3,7 @@ package com.jammking.loopbox.application.port.`in`
 import com.jammking.loopbox.domain.entity.image.Image
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersion
+import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
 
 interface ImageQueryUseCase {
@@ -12,6 +13,7 @@ interface ImageQueryUseCase {
 
     data class GetImageDetailResult(
         val image: Image,
-        val versions: List<ImageVersion>
+        val versions: List<ImageVersion>,
+        val versionUrls: Map<ImageVersionId, String> = emptyMap()
     )
 }

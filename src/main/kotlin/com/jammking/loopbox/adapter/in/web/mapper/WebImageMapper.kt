@@ -15,10 +15,11 @@ object WebImageMapper {
             status = status.name
         )
 
-    fun ImageVersion.toWeb() =
+    fun ImageVersion.toWeb(url: String? = null) =
         WebImageVersion(
             id = id.value,
             fileId = fileId?.value,
+            url = url,
             config = config.toWeb()
         )
 
