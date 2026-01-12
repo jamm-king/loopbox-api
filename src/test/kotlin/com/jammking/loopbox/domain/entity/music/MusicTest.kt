@@ -97,4 +97,18 @@ class MusicTest {
         // Then
         assertEquals("Focus Track", copied.alias)
     }
+
+    @Test
+    fun `updateAlias should update alias and updatedAt`() {
+        // Given
+        val music = Music(projectId = projectId, alias = "Old Name")
+        val now = Instant.now().plusSeconds(5)
+
+        // When
+        music.updateAlias("New Name", now)
+
+        // Then
+        assertEquals("New Name", music.alias)
+        assertEquals(now, music.updatedAt)
+    }
 }

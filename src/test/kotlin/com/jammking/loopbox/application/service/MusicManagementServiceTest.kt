@@ -81,6 +81,25 @@ class MusicManagementServiceTest {
     }
 
     @Test
+    fun `updateMusic should update alias`() {
+        // Given
+        val music = Music(projectId = ProjectId("project-1"), alias = "Old")
+        whenever(musicRepository.findById(music.id)).thenReturn(music)
+        whenever(musicRepository.save(music)).thenReturn(music)
+        val command = MusicManagementUseCase.UpdateMusicCommand(
+            musicId = music.id,
+            alias = "New"
+        )
+
+        // When
+        val result = musicManagementService.updateMusic(command)
+
+        // Then
+        assertEquals("New", result.alias)
+        verify(musicRepository).save(music)
+    }
+
+    @Test
     fun `deleteMusic should delete music and mark project draft when empty`() {
         // Given
         val projectId = ProjectId("project-1")
