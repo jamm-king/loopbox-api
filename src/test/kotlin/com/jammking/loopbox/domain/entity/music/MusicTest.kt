@@ -85,4 +85,16 @@ class MusicTest {
         assertNull(music.lastOperation)
         assertEquals(now, music.updatedAt)
     }
+
+    @Test
+    fun `copy should keep alias when not overridden`() {
+        // Given
+        val music = Music(projectId = projectId, alias = "Focus Track")
+
+        // When
+        val copied = music.copy()
+
+        // Then
+        assertEquals("Focus Track", copied.alias)
+    }
 }

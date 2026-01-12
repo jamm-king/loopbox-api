@@ -65,16 +65,18 @@ class MusicManagementServiceTest {
     fun `createMusic should save and return music`() {
         // Given
         val projectId = ProjectId("project-1")
+        val alias = "My Song"
         whenever(projectRepository.findById(projectId)).thenReturn(
             Project(id = projectId, title = "Project")
         )
         whenever(musicRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        val result = musicManagementService.createMusic(projectId)
+        val result = musicManagementService.createMusic(projectId, alias)
 
         // Then
         assertEquals(projectId, result.projectId)
+        assertEquals(alias, result.alias)
         verify(musicRepository).save(any())
     }
 

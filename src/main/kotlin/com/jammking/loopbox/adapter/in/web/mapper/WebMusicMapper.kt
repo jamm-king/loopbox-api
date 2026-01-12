@@ -13,6 +13,7 @@ object WebMusicMapper {
     fun Music.toWeb() =
         WebMusic(
             id = id.value,
+            alias = alias,
             status = status.name
         )
 

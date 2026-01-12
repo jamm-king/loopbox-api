@@ -8,6 +8,7 @@ import java.util.*
 class Music(
     val id: MusicId = MusicId(UUID.randomUUID().toString()),
     val projectId: ProjectId,
+    val alias: String? = null,
     status: MusicStatus = MusicStatus.IDLE,
     requestedConfig: MusicConfig? = null,
     lastOperation: MusicOperation? = null,
@@ -83,6 +84,7 @@ class Music(
     fun copy(
         id: MusicId = this.id,
         projectId: ProjectId = this.projectId,
+        alias: String? = this.alias,
         status: MusicStatus = this.status,
         requestedConfig: MusicConfig? = this.requestedConfig,
         lastOperation: MusicOperation? = this.lastOperation,
@@ -91,6 +93,7 @@ class Music(
     ): Music = Music(
         id = id,
         projectId = projectId,
+        alias = alias,
         status = status,
         requestedConfig = requestedConfig,
         lastOperation = lastOperation,

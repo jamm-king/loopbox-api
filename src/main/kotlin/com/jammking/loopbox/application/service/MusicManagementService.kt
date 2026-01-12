@@ -31,11 +31,11 @@ class MusicManagementService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun createMusic(projectId: ProjectId): Music {
+    override fun createMusic(projectId: ProjectId, alias: String?): Music {
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)
 
-        val music = Music(projectId = projectId)
+        val music = Music(projectId = projectId, alias = alias)
         val saved = musicRepository.save(music)
         log.info("Created music: ${saved.id.value}")
 

@@ -24,9 +24,10 @@ class MusicController(
 
     @PostMapping("/create")
     fun createMusic(
-        @PathVariable projectId: String
+        @PathVariable projectId: String,
+        @RequestBody(required = false) request: CreateMusicRequest?
     ): CreateMusicResponse {
-        val music = musicManagementUseCase.createMusic(ProjectId(projectId))
+        val music = musicManagementUseCase.createMusic(ProjectId(projectId), request?.alias)
         val webMusic = music.toWeb()
         return CreateMusicResponse(webMusic)
     }

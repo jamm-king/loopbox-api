@@ -2,6 +2,7 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jammking.loopbox.adapter.`in`.web.dto.error.ErrorResponseFactory
+import com.jammking.loopbox.adapter.`in`.web.dto.music.CreateMusicRequest
 import com.jammking.loopbox.adapter.`in`.web.dto.music.GenerateVersionRequest
 import com.jammking.loopbox.application.port.`in`.MusicManagementUseCase
 import com.jammking.loopbox.application.port.`in`.MusicQueryUseCase
@@ -51,13 +52,19 @@ class MusicControllerTest {
     fun `createMusic should return created music`() {
         // Given
         val projectId = "project-1"
-        val music = Music(id = MusicId("music-1"), projectId = ProjectId(projectId))
-        whenever(musicManagementUseCase.createMusic(ProjectId(projectId))).thenReturn(music)
+        val request = CreateMusicRequest(alias = "My Song")
+        val music = Music(id = MusicId("music-1"), projectId = ProjectId(projectId), alias = request.alias)
+        whenever(musicManagementUseCase.createMusic(ProjectId(projectId), request.alias)).thenReturn(music)
 
         // When & Then
-        mockMvc.perform(post("/api/project/{projectId}/music/create", projectId))
+        mockMvc.perform(
+            post("/api/project/{projectId}/music/create", projectId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.music.id").value("music-1"))
+            .andExpect(jsonPath("$.music.alias").value("My Song"))
             .andExpect(jsonPath("$.music.status").value("IDLE"))
     }
 
@@ -66,7 +73,7 @@ class MusicControllerTest {
         // Given
         val musicId = "music-1"
         val projectId = "project-1"
-        val music = Music(id = MusicId(musicId), projectId = ProjectId(projectId))
+        val music = Music(id = MusicId(musicId), projectId = ProjectId(projectId), alias = "Track 1")
         val config = MusicConfig(mood = "calm", bpm = 120, melody = "soft")
         val version = MusicVersion(
             id = MusicVersionId("v1"),
@@ -81,6 +88,7 @@ class MusicControllerTest {
         mockMvc.perform(get("/api/project/{projectId}/music/{musicId}", projectId, musicId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.music.id").value(musicId))
+            .andExpect(jsonPath("$.music.alias").value("Track 1"))
             .andExpect(jsonPath("$.versions[0].id").value("v1"))
             .andExpect(jsonPath("$.versions[0].config.mood").value("calm"))
             .andExpect(jsonPath("$.versions[0].config.bpm").value(120))
