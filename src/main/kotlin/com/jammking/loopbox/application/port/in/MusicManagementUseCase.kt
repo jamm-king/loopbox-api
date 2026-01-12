@@ -6,7 +6,7 @@ import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 
 interface MusicManagementUseCase {
 
-    fun createMusic(projectId: ProjectId): Music
+    fun createMusic(projectId: ProjectId, alias: String? = null): Music
     fun deleteMusic(musicId: MusicId)
     fun generateVersion(command: GenerateVersionCommand): Music
     fun deleteVersion(musicId: MusicId, versionId: MusicVersionId): Music
