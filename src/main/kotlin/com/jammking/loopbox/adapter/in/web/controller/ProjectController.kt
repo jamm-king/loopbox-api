@@ -4,6 +4,8 @@ import com.jammking.loopbox.adapter.`in`.web.dto.project.CreateProjectRequest
 import com.jammking.loopbox.adapter.`in`.web.dto.project.CreateProjectResponse
 import com.jammking.loopbox.adapter.`in`.web.dto.project.GetProjectResponse
 import com.jammking.loopbox.adapter.`in`.web.dto.project.GetAllProjectResponse
+import com.jammking.loopbox.adapter.`in`.web.dto.project.UpdateProjectRequest
+import com.jammking.loopbox.adapter.`in`.web.dto.project.UpdateProjectResponse
 import com.jammking.loopbox.adapter.`in`.web.mapper.WebProjectMapper.toWeb
 import com.jammking.loopbox.application.port.`in`.ProjectManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ProjectQueryUseCase
@@ -41,6 +43,16 @@ class ProjectController(
     fun getAllProject(): GetAllProjectResponse {
         val webProjectList = projectQueryUseCase.getAllProjects().map { it.toWeb() }
         return GetAllProjectResponse(webProjectList)
+    }
+
+    @PatchMapping("/{projectId}")
+    fun updateProject(
+        @PathVariable projectId: String,
+        @RequestBody request: UpdateProjectRequest
+    ): UpdateProjectResponse {
+        projectManagementUseCase.renameTitle(ProjectId(projectId), request.title)
+        val project = projectQueryUseCase.getProjectDetail(ProjectId(projectId))
+        return UpdateProjectResponse(project.toWeb())
     }
 
     @DeleteMapping("/{projectId}")
