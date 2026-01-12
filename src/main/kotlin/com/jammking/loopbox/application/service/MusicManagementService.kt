@@ -42,6 +42,19 @@ class MusicManagementService(
         return saved
     }
 
+    override fun updateMusic(command: MusicManagementUseCase.UpdateMusicCommand): Music {
+        val music = musicRepository.findById(command.musicId)
+            ?: throw MusicNotFoundException.byMusicId(command.musicId)
+
+        val normalizedAlias = command.alias?.trim()?.ifEmpty { null }
+        music.updateAlias(normalizedAlias)
+
+        val saved = musicRepository.save(music)
+        log.info("Updated music alias: musicId={}, alias={}", saved.id.value, saved.alias)
+
+        return saved
+    }
+
     override fun deleteMusic(musicId: MusicId) {
         val music = musicRepository.findById(musicId)
             ?: throw MusicNotFoundException.byMusicId(musicId)

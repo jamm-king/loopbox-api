@@ -8,7 +8,7 @@ import java.util.*
 class Music(
     val id: MusicId = MusicId(UUID.randomUUID().toString()),
     val projectId: ProjectId,
-    val alias: String? = null,
+    alias: String? = null,
     status: MusicStatus = MusicStatus.IDLE,
     requestedConfig: MusicConfig? = null,
     lastOperation: MusicOperation? = null,
@@ -17,6 +17,9 @@ class Music(
 ) {
 
     var status: MusicStatus = status
+        private set
+
+    var alias: String? = alias
         private set
 
     var requestedConfig: MusicConfig? = requestedConfig
@@ -78,6 +81,15 @@ class Music(
 
         this.status = MusicStatus.IDLE
         this.lastOperation = null
+        this.updatedAt = now
+    }
+
+    fun updateAlias(newAlias: String?, now: Instant = Instant.now()) {
+        if (alias == newAlias) {
+            return
+        }
+
+        this.alias = newAlias
         this.updatedAt = now
     }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.jammking.loopbox.adapter.`in`.web.dto.error.ErrorResponseFactory
 import com.jammking.loopbox.adapter.`in`.web.dto.music.CreateMusicRequest
 import com.jammking.loopbox.adapter.`in`.web.dto.music.GenerateVersionRequest
+import com.jammking.loopbox.adapter.`in`.web.dto.music.UpdateMusicRequest
 import com.jammking.loopbox.application.port.`in`.MusicManagementUseCase
 import com.jammking.loopbox.application.port.`in`.MusicQueryUseCase
 import com.jammking.loopbox.domain.entity.music.Music
@@ -26,6 +27,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -107,6 +109,26 @@ class MusicControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.musicList[0].id").value("m1"))
             .andExpect(jsonPath("$.musicList[1].id").value("m2"))
+    }
+
+    @Test
+    fun `updateMusic should update alias`() {
+        // Given
+        val projectId = "project-1"
+        val musicId = "music-1"
+        val request = UpdateMusicRequest(alias = "Updated Name")
+        val music = Music(id = MusicId(musicId), projectId = ProjectId(projectId), alias = request.alias)
+        whenever(musicManagementUseCase.updateMusic(any())).thenReturn(music)
+
+        // When & Then
+        mockMvc.perform(
+            patch("/api/project/{projectId}/music/{musicId}", projectId, musicId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.music.id").value(musicId))
+            .andExpect(jsonPath("$.music.alias").value("Updated Name"))
     }
 
     @Test

@@ -50,6 +50,20 @@ class MusicController(
         )
     }
 
+    @PatchMapping("/{musicId}")
+    fun updateMusic(
+        @PathVariable musicId: String,
+        @RequestBody request: UpdateMusicRequest
+    ): UpdateMusicResponse {
+        val command = MusicManagementUseCase.UpdateMusicCommand(
+            musicId = MusicId(musicId),
+            alias = request.alias
+        )
+        val music = musicManagementUseCase.updateMusic(command)
+        val webMusic = music.toWeb()
+        return UpdateMusicResponse(webMusic)
+    }
+
     @DeleteMapping("/{musicId}")
     fun deleteMusic(
         @PathVariable musicId: String
