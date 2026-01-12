@@ -2,6 +2,7 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jammking.loopbox.adapter.`in`.web.dto.project.CreateProjectRequest
+import com.jammking.loopbox.adapter.`in`.web.dto.project.UpdateProjectRequest
 import com.jammking.loopbox.application.port.`in`.ProjectManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ProjectQueryUseCase
 import com.jammking.loopbox.domain.entity.project.Project
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -81,6 +83,27 @@ class ProjectControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.projectList[0].id").value("p1"))
             .andExpect(jsonPath("$.projectList[1].id").value("p2"))
+    }
+
+    @Test
+    fun `updateProject should update title`() {
+        // Given
+        val projectId = "project-1"
+        val request = UpdateProjectRequest(title = "Updated Project")
+        val project = Project(id = ProjectId(projectId), title = request.title)
+        whenever(projectQueryUseCase.getProjectDetail(ProjectId(projectId))).thenReturn(project)
+
+        // When & Then
+        mockMvc.perform(
+            patch("/api/project/{projectId}", projectId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.project.id").value(projectId))
+            .andExpect(jsonPath("$.project.title").value("Updated Project"))
+
+        verify(projectManagementUseCase).renameTitle(ProjectId(projectId), request.title)
     }
 
     @Test
