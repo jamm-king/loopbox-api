@@ -63,4 +63,25 @@ class FfmpegRenderPlannerTest {
             intervals
         )
     }
+
+    @Test
+    fun `build uses escaped commas in scale filter`() {
+        val command = VideoRenderClient.RenderCommand(
+            projectId = ProjectId("project-1"),
+            videoId = VideoId("video-1"),
+            outputPath = "output.mp4",
+            segments = listOf(
+                VideoRenderClient.RenderSegment("m1", "a1.mp3", 2)
+            ),
+            imageGroups = listOf(
+                VideoRenderClient.RenderImageGroup("i1", "/a.png", 0, 0)
+            )
+        )
+
+        val plan = planner.build(command)
+        val filterArgIndex = plan.commandLine.indexOf("-filter_complex")
+        val filter = plan.commandLine[filterArgIndex + 1]
+
+        assertEquals(true, filter.contains("scale=if(gt(a\\,1.777778)\\,-1\\,1920)"))
+    }
 }

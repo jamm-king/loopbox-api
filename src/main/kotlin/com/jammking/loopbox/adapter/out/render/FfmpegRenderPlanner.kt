@@ -136,7 +136,7 @@ class FfmpegRenderPlanner(
         audioSegments: List<AudioSegment>
     ): String {
         val aspect = String.format(Locale.US, "%.6f", width.toDouble() / height)
-        val scaleFilter = "scale=if(gt(a,$aspect),-1,$width):if(gt(a,$aspect),$height,-1),crop=$width:$height"
+        val scaleFilter = "scale=if(gt(a\\,$aspect)\\,-1\\,$width):if(gt(a\\,$aspect)\\,$height\\,-1),crop=$width:$height"
         val filters = mutableListOf<String>()
 
         imageIntervals.forEachIndexed { index, interval ->
