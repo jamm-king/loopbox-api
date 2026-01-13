@@ -10,6 +10,7 @@ object HttpStatusMapper {
         ErrorCode.PROJECT_NOT_FOUND -> HttpStatus.NOT_FOUND
         ErrorCode.MUSIC_NOT_FOUND -> HttpStatus.NOT_FOUND
         ErrorCode.IMAGE_NOT_FOUND -> HttpStatus.NOT_FOUND
+        ErrorCode.VIDEO_NOT_FOUND -> HttpStatus.NOT_FOUND
         ErrorCode.VERSION_NOT_FOUND -> HttpStatus.NOT_FOUND
         ErrorCode.TASK_NOT_FOUND -> HttpStatus.NOT_FOUND
         ErrorCode.RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND
@@ -24,6 +25,7 @@ object HttpStatusMapper {
         ErrorCode.INVALID_MUSIC_VERSION_STATE -> HttpStatus.CONFLICT
         ErrorCode.INVALID_IMAGE_STATE -> HttpStatus.CONFLICT
         ErrorCode.INVALID_IMAGE_VERSION_STATE -> HttpStatus.CONFLICT
+        ErrorCode.INVALID_VIDEO_STATE -> HttpStatus.CONFLICT
         ErrorCode.INVALID_TASK_STATE -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_PROJECT_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_MUSIC_ID -> HttpStatus.CONFLICT
@@ -34,6 +36,7 @@ object HttpStatusMapper {
         ErrorCode.INVALID_AUDIO_FILE_PATH -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_IMAGE_AI_PROVIDER -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_IMAGE_FILE_PATH -> HttpStatus.BAD_REQUEST
+        ErrorCode.INVALID_VIDEO_EDIT -> HttpStatus.BAD_REQUEST
 
         ErrorCode.INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
     }
