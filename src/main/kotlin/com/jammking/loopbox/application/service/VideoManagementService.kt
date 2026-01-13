@@ -58,6 +58,10 @@ class VideoManagementService(
     }
 
     override fun requestRender(projectId: ProjectId): Video {
+        val project = projectRepository.findById(projectId)
+            ?: throw ProjectNotFoundException.byProjectId(projectId)
+        log.info("Request render for projectId={}", project.id.value)
+
         val video = videoRepository.findByProjectId(projectId)
             ?: throw VideoNotFoundException.byProjectId(projectId)
 

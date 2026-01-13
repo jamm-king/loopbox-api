@@ -145,6 +145,7 @@ class VideoManagementServiceTest {
         // Given
         val projectId = ProjectId("project-1")
         val video = Video(projectId = projectId)
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(video)
         whenever(videoRepository.save(any())).thenAnswer { it.arguments[0] }
 
