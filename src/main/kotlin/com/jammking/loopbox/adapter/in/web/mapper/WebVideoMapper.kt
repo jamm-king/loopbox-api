@@ -15,6 +15,7 @@ object WebVideoMapper {
             projectId = projectId.value,
             status = status.name,
             totalDurationSeconds = totalDurationSeconds(),
+            fileId = fileId?.value,
             segments = segments.mapIndexed { index, segment -> segment.toWeb(index) },
             imageGroups = imageGroups.map { it.toWeb() }
         )

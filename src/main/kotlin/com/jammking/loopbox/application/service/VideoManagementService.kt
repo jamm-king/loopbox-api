@@ -10,10 +10,14 @@ import com.jammking.loopbox.domain.exception.music.MusicVersionNotFoundException
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.exception.video.InvalidVideoEditException
 import com.jammking.loopbox.domain.exception.video.VideoNotFoundException
+import com.jammking.loopbox.application.port.out.VideoFileStorage
+import com.jammking.loopbox.application.port.out.VideoRenderClient
 import com.jammking.loopbox.domain.port.out.ImageVersionRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import com.jammking.loopbox.domain.port.out.VideoRepository
+import com.jammking.loopbox.domain.port.out.AudioFileRepository
+import com.jammking.loopbox.domain.port.out.ImageFileRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -22,7 +26,11 @@ class VideoManagementService(
     private val projectRepository: ProjectRepository,
     private val videoRepository: VideoRepository,
     private val musicVersionRepository: MusicVersionRepository,
-    private val imageVersionRepository: ImageVersionRepository
+    private val imageVersionRepository: ImageVersionRepository,
+    private val audioFileRepository: AudioFileRepository,
+    private val imageFileRepository: ImageFileRepository,
+    private val videoFileStorage: VideoFileStorage,
+    private val videoRenderClient: VideoRenderClient
 ): VideoManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -66,14 +74,66 @@ class VideoManagementService(
             ?: throw VideoNotFoundException.byProjectId(projectId)
 
         video.startRender()
-        videoRepository.save(video)
-
-        // MVP: render immediately
-        video.completeRender()
         val saved = videoRepository.save(video)
-        log.info("Rendered video: projectId={}, status={}", projectId.value, saved.status)
 
-        return saved
+        val renderCommand = buildRenderCommand(projectId, saved)
+        log.info(
+            "Queued video render: projectId={}, videoId={}, segments={}, imageGroups={}",
+            projectId.value, saved.id.value, renderCommand.segments.size, renderCommand.imageGroups.size
+        )
+
+        return try {
+            videoRenderClient.requestRender(renderCommand)
+            saved
+        } catch(e: Exception) {
+            log.error("Failed to request video render: projectId={}, reason={}", projectId.value, e.message, e)
+            saved.failRender()
+            videoRepository.save(saved)
+            throw e
+        }
+    }
+
+    private fun buildRenderCommand(
+        projectId: ProjectId,
+        video: Video
+    ): VideoRenderClient.RenderCommand {
+        val segments = video.segments.map { segment ->
+            val version = musicVersionRepository.findById(segment.musicVersionId)
+                ?: throw MusicVersionNotFoundException.byVersionId(segment.musicVersionId)
+            val fileId = version.fileId
+                ?: throw InvalidVideoEditException("Invalid video edit: music version file is missing.")
+            val file = audioFileRepository.findById(fileId)
+                ?: throw InvalidVideoEditException("Invalid video edit: music file not found.")
+            VideoRenderClient.RenderSegment(
+                musicVersionId = segment.musicVersionId.value,
+                audioPath = file.path,
+                durationSeconds = segment.durationSeconds
+            )
+        }
+
+        val imageGroups = video.imageGroups.map { group ->
+            val version = imageVersionRepository.findById(group.imageVersionId)
+                ?: throw ImageVersionNotFoundException.byVersionId(group.imageVersionId)
+            val fileId = version.fileId
+                ?: throw InvalidVideoEditException("Invalid video edit: image version file is missing.")
+            val file = imageFileRepository.findById(fileId)
+                ?: throw InvalidVideoEditException("Invalid video edit: image file not found.")
+            VideoRenderClient.RenderImageGroup(
+                imageVersionId = group.imageVersionId.value,
+                imagePath = file.path,
+                segmentIndexStart = group.segmentIndexStart,
+                segmentIndexEnd = group.segmentIndexEnd
+            )
+        }
+
+        val outputPath = videoFileStorage.prepareRenderPath(projectId, video.id)
+        return VideoRenderClient.RenderCommand(
+            projectId = projectId,
+            videoId = video.id,
+            outputPath = outputPath,
+            segments = segments,
+            imageGroups = imageGroups
+        )
     }
 
     private fun buildImageGroups(

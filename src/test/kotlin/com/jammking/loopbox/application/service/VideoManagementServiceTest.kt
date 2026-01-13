@@ -12,6 +12,10 @@ import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.entity.video.Video
 import com.jammking.loopbox.domain.entity.video.VideoStatus
 import com.jammking.loopbox.domain.exception.video.InvalidVideoEditException
+import com.jammking.loopbox.application.port.out.VideoFileStorage
+import com.jammking.loopbox.application.port.out.VideoRenderClient
+import com.jammking.loopbox.domain.port.out.AudioFileRepository
+import com.jammking.loopbox.domain.port.out.ImageFileRepository
 import com.jammking.loopbox.domain.port.out.ImageVersionRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
@@ -23,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.junit.jupiter.MockitoExtension
 
@@ -40,6 +45,18 @@ class VideoManagementServiceTest {
 
     @Mock
     private lateinit var imageVersionRepository: ImageVersionRepository
+
+    @Mock
+    private lateinit var audioFileRepository: AudioFileRepository
+
+    @Mock
+    private lateinit var imageFileRepository: ImageFileRepository
+
+    @Mock
+    private lateinit var videoFileStorage: VideoFileStorage
+
+    @Mock
+    private lateinit var videoRenderClient: VideoRenderClient
 
     @InjectMocks
     private lateinit var videoManagementService: VideoManagementService
@@ -141,18 +158,20 @@ class VideoManagementServiceTest {
     }
 
     @Test
-    fun `requestRender should complete rendering`() {
+    fun `requestRender should start rendering`() {
         // Given
         val projectId = ProjectId("project-1")
         val video = Video(projectId = projectId)
         whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(video)
         whenever(videoRepository.save(any())).thenAnswer { it.arguments[0] }
+        whenever(videoFileStorage.prepareRenderPath(projectId, video.id)).thenReturn("video.mp4")
 
         // When
         val result = videoManagementService.requestRender(projectId)
 
         // Then
-        assertEquals(VideoStatus.READY, result.status)
+        assertEquals(VideoStatus.RENDERING, result.status)
+        verify(videoRenderClient).requestRender(any())
     }
 }

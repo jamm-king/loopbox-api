@@ -5,6 +5,7 @@ data class WebVideo(
     val projectId: String,
     val status: String,
     val totalDurationSeconds: Int,
+    val fileId: String?,
     val segments: List<WebVideoSegment>,
     val imageGroups: List<WebVideoImageGroup>
 ) { companion object }
