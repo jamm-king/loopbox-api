@@ -1,7 +1,10 @@
 package com.jammking.loopbox.adapter.out.storage.file
 
 import com.jammking.loopbox.application.exception.PortErrorCode
+import com.jammking.loopbox.application.exception.ResolveLocalVideoPortException
 import com.jammking.loopbox.application.exception.VideoFileStorageException
+import com.jammking.loopbox.application.port.`in`.GetVideoFileUseCase
+import com.jammking.loopbox.application.port.out.ResolveLocalVideoPort
 import com.jammking.loopbox.application.port.out.VideoFileStorage
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.entity.video.VideoId
@@ -15,7 +18,7 @@ import java.nio.file.Paths
 class LocalVideoFileStorage(
     @Value("\${loopbox.storage.video-dir}")
     private val videoBaseDir: String
-): VideoFileStorage {
+): VideoFileStorage, ResolveLocalVideoPort {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -33,5 +36,27 @@ class LocalVideoFileStorage(
 
         val fileName = "${videoId.value}.mp4"
         return dir.resolve(fileName).toString()
+    }
+
+    override fun resolve(pathStr: String): GetVideoFileUseCase.VideoStreamTarget {
+        val path = Paths.get(pathStr).normalize()
+
+        if (!Files.exists(path) || !Files.isRegularFile(path)) {
+            log.error("Video binary missing: path=$path")
+            throw ResolveLocalVideoPortException.videoBinaryNotFound()
+        }
+        if (!Files.isReadable(path)) {
+            log.error("Video binary not readable: path=$path")
+            throw ResolveLocalVideoPortException.videoBinaryNotFound()
+        }
+
+        val length = Files.size(path)
+        val contentType = Files.probeContentType(path) ?: "video/mp4"
+
+        return GetVideoFileUseCase.VideoStreamTarget(
+            path = path,
+            contentType = contentType,
+            contentLength = length
+        )
     }
 }
