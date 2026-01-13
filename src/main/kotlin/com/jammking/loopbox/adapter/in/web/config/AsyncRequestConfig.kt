@@ -7,7 +7,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 class AsyncRequestConfig(
-    @Value("\${loopbox.web.async-timeout-ms:0}")
+    @Value("\${loopbox.web.async-timeout-ms:600000}")
     private val asyncTimeoutMs: Long
 ): WebMvcConfigurer {
 

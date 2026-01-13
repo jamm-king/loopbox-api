@@ -8,7 +8,7 @@ class AsyncRequestConfigTest {
 
     @Test
     fun `configureAsyncSupport should set default timeout`() {
-        val config = AsyncRequestConfig(asyncTimeoutMs = 0)
+        val config = AsyncRequestConfig(asyncTimeoutMs = 600000)
         val configurer = AsyncSupportConfigurer()
 
         config.configureAsyncSupport(configurer)
@@ -18,6 +18,6 @@ class AsyncRequestConfigTest {
             ?: throw IllegalStateException("Timeout field not found on AsyncSupportConfigurer")
         field.isAccessible = true
         val timeout = field.get(configurer) as Long?
-        assertEquals(0, timeout)
+        assertEquals(600000, timeout)
     }
 }
