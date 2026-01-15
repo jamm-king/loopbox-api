@@ -9,6 +9,7 @@ import com.jammking.loopbox.domain.entity.music.MusicConfig
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import com.jammking.loopbox.domain.exception.task.InvalidMusicAiProvider
 import org.slf4j.LoggerFactory
