@@ -19,7 +19,7 @@ class AuthenticatedUserResolver(
 
         val claims = try {
             jwtTokenProvider.parseAndValidate(token, "access")
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             throw UnauthorizedException("Invalid access token.", e)
         }
 
