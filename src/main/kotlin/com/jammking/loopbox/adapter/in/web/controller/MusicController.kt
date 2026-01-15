@@ -8,6 +8,7 @@ import com.jammking.loopbox.domain.entity.music.MusicConfig
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import com.jammking.loopbox.domain.exception.task.InvalidMusicAiProvider
 import org.slf4j.LoggerFactory
@@ -24,27 +25,31 @@ class MusicController(
 
     @PostMapping("/create")
     fun createMusic(
+        @RequestParam userId: String,
         @PathVariable projectId: String,
         @RequestBody(required = false) request: CreateMusicRequest?
     ): CreateMusicResponse {
-        val music = musicManagementUseCase.createMusic(ProjectId(projectId), request?.alias)
+        val music = musicManagementUseCase.createMusic(UserId(userId), ProjectId(projectId), request?.alias)
         val webMusic = music.toWeb()
         return CreateMusicResponse(webMusic)
     }
 
     @GetMapping("/{musicId}")
     fun getMusic(
+        @RequestParam userId: String,
+        @PathVariable projectId: String,
         @PathVariable musicId: String
     ): GetMusicResponse {
-        val getResult = musicQueryUseCase.getMusicDetail(MusicId(musicId))
+        val getResult = musicQueryUseCase.getMusicDetail(UserId(userId), MusicId(musicId))
         return GetMusicResponse.from(getResult)
     }
 
     @GetMapping
     fun getMusicList(
+        @RequestParam userId: String,
         @PathVariable projectId: String
     ): GetMusicListResponse {
-        val musicList = musicQueryUseCase.getMusicListForProject(ProjectId(projectId))
+        val musicList = musicQueryUseCase.getMusicListForProject(UserId(userId), ProjectId(projectId))
         return GetMusicListResponse(
             musicList = musicList.map { it.toWeb() }
         )
@@ -52,10 +57,13 @@ class MusicController(
 
     @PatchMapping("/{musicId}")
     fun updateMusic(
+        @RequestParam userId: String,
+        @PathVariable projectId: String,
         @PathVariable musicId: String,
         @RequestBody request: UpdateMusicRequest
     ): UpdateMusicResponse {
         val command = MusicManagementUseCase.UpdateMusicCommand(
+            userId = UserId(userId),
             musicId = MusicId(musicId),
             alias = request.alias
         )
@@ -66,13 +74,16 @@ class MusicController(
 
     @DeleteMapping("/{musicId}")
     fun deleteMusic(
+        @RequestParam userId: String,
+        @PathVariable projectId: String,
         @PathVariable musicId: String
     ) {
-        musicManagementUseCase.deleteMusic(MusicId(musicId))
+        musicManagementUseCase.deleteMusic(UserId(userId), MusicId(musicId))
     }
 
     @PostMapping("/{musicId}/version/generate")
     fun generateVersion(
+        @RequestParam userId: String,
         @PathVariable projectId: String,
         @PathVariable musicId: String,
         @RequestBody request: GenerateVersionRequest
@@ -83,6 +94,7 @@ class MusicController(
             throw InvalidMusicAiProvider(request.provider)
         }
         val command = MusicManagementUseCase.GenerateVersionCommand(
+            userId = UserId(userId),
             musicId = MusicId(musicId),
             config = request.toMusicConfig(),
             provider = provider
@@ -94,11 +106,12 @@ class MusicController(
 
     @DeleteMapping("/{musicId}/version/{versionId}")
     fun deleteVersion(
+        @RequestParam userId: String,
         @PathVariable projectId: String,
         @PathVariable musicId: String,
         @PathVariable versionId: String
     ): DeleteVersionResponse {
-        val music = musicManagementUseCase.deleteVersion(MusicId(musicId), MusicVersionId(versionId))
+        val music = musicManagementUseCase.deleteVersion(UserId(userId), MusicId(musicId), MusicVersionId(versionId))
         val webMusic = music.toWeb()
         return DeleteVersionResponse(webMusic)
     }

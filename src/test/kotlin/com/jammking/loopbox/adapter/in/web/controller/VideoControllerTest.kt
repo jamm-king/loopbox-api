@@ -10,6 +10,7 @@ import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.video.Video
 import com.jammking.loopbox.domain.entity.video.VideoImageGroup
 import com.jammking.loopbox.domain.entity.video.VideoSegment
@@ -48,6 +49,7 @@ class VideoControllerTest {
     @Test
     fun `getVideo should return video detail`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val video = Video(
             projectId = ProjectId(projectId),
@@ -67,10 +69,11 @@ class VideoControllerTest {
                 )
             )
         )
-        whenever(videoQueryUseCase.getVideoDetail(ProjectId(projectId))).thenReturn(video)
+        whenever(videoQueryUseCase.getVideoDetail(UserId(userId), ProjectId(projectId))).thenReturn(video)
 
         // When & Then
-        mockMvc.perform(get("/api/project/{projectId}/video", projectId))
+        mockMvc.perform(get("/api/project/{projectId}/video", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.video.projectId").value(projectId))
             .andExpect(jsonPath("$.video.segments[0].musicId").value("music-1"))
@@ -80,6 +83,7 @@ class VideoControllerTest {
     @Test
     fun `updateVideo should update timeline`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val request = UpdateVideoRequest(
             segments = listOf(UpdateVideoRequest.SegmentRequest("music-version-1")),
@@ -100,6 +104,7 @@ class VideoControllerTest {
         // When & Then
         mockMvc.perform(
             put("/api/project/{projectId}/video", projectId)
+                .param("userId", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -111,12 +116,14 @@ class VideoControllerTest {
     @Test
     fun `renderVideo should return rendered video`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val video = Video(projectId = ProjectId(projectId))
-        whenever(videoManagementUseCase.requestRender(ProjectId(projectId))).thenReturn(video)
+        whenever(videoManagementUseCase.requestRender(UserId(userId), ProjectId(projectId))).thenReturn(video)
 
         // When & Then
-        mockMvc.perform(post("/api/project/{projectId}/video/render", projectId))
+        mockMvc.perform(post("/api/project/{projectId}/video/render", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.video.projectId").value(projectId))
     }

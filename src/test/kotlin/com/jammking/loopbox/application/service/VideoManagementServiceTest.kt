@@ -9,6 +9,7 @@ import com.jammking.loopbox.domain.entity.music.MusicVersion
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.video.Video
 import com.jammking.loopbox.domain.entity.video.VideoStatus
 import com.jammking.loopbox.domain.exception.video.InvalidVideoEditException
@@ -66,8 +67,9 @@ class VideoManagementServiceTest {
     @Test
     fun `updateVideo should create timeline`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
 
         val musicVersionId = MusicVersionId("music-version-1")
         val musicVersion = MusicVersion(
@@ -90,6 +92,7 @@ class VideoManagementServiceTest {
         whenever(videoRepository.save(any())).thenAnswer { it.arguments[0] }
 
         val command = VideoManagementUseCase.UpdateVideoCommand(
+            userId = userId,
             projectId = projectId,
             segments = listOf(VideoManagementUseCase.SegmentInput(musicVersionId)),
             imageGroups = listOf(
@@ -113,8 +116,9 @@ class VideoManagementServiceTest {
     @Test
     fun `updateVideo should reject overlapping image groups`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
 
         val musicVersionId = MusicVersionId("music-version-1")
         val musicVersion = MusicVersion(
@@ -134,6 +138,7 @@ class VideoManagementServiceTest {
         whenever(imageVersionRepository.findById(imageVersionId)).thenReturn(imageVersion)
 
         val command = VideoManagementUseCase.UpdateVideoCommand(
+            userId = userId,
             projectId = projectId,
             segments = listOf(
                 VideoManagementUseCase.SegmentInput(musicVersionId),
@@ -162,15 +167,16 @@ class VideoManagementServiceTest {
     @Test
     fun `requestRender should start rendering`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val video = Video(projectId = projectId)
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(video)
         whenever(videoRepository.save(any())).thenAnswer { it.arguments[0] }
         whenever(videoFileStorage.prepareRenderPath(projectId, video.id)).thenReturn("video.mp4")
 
         // When
-        val result = videoManagementService.requestRender(projectId)
+        val result = videoManagementService.requestRender(userId, projectId)
 
         // Then
         assertEquals(VideoStatus.RENDERING, result.status)
@@ -180,6 +186,7 @@ class VideoManagementServiceTest {
     @Test
     fun `requestRender should not persist rendering when render command validation fails`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val musicVersionId = MusicVersionId("music-version-1")
         val musicId = MusicId("music-1")
@@ -199,13 +206,13 @@ class VideoManagementServiceTest {
             config = com.jammking.loopbox.domain.entity.music.MusicConfig(),
             durationSeconds = 10
         )
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(video)
         whenever(musicVersionRepository.findById(musicVersionId)).thenReturn(musicVersion)
 
         // When & Then
         assertThrows(InvalidVideoEditException::class.java) {
-            videoManagementService.requestRender(projectId)
+            videoManagementService.requestRender(userId, projectId)
         }
         assertEquals(VideoStatus.DRAFT, video.status)
         verify(videoRepository, never()).save(any())
@@ -215,16 +222,17 @@ class VideoManagementServiceTest {
     @Test
     fun `requestRender should reject when already rendering`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val video = Video(projectId = projectId)
         video.startRender()
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(video)
         whenever(videoFileStorage.prepareRenderPath(projectId, video.id)).thenReturn("video.mp4")
 
         // When & Then
         assertThrows(InvalidVideoStateException::class.java) {
-            videoManagementService.requestRender(projectId)
+            videoManagementService.requestRender(userId, projectId)
         }
         assertEquals(VideoStatus.RENDERING, video.status)
         verify(videoRepository, never()).save(any())
@@ -234,16 +242,17 @@ class VideoManagementServiceTest {
     @Test
     fun `requestRender should keep draft when output path preparation fails`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val video = Video(projectId = projectId)
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(video)
         whenever(videoFileStorage.prepareRenderPath(projectId, video.id))
             .thenThrow(IllegalStateException("render path error"))
 
         // When & Then
         assertThrows(IllegalStateException::class.java) {
-            videoManagementService.requestRender(projectId)
+            videoManagementService.requestRender(userId, projectId)
         }
         assertEquals(VideoStatus.DRAFT, video.status)
         verify(videoRepository, never()).save(any())

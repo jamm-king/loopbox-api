@@ -14,6 +14,7 @@ import com.jammking.loopbox.domain.entity.task.ImageGenerationTaskStatus
 import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskStatus
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.port.out.ImageGenerationTaskRepository
 import com.jammking.loopbox.domain.port.out.ImageRepository
 import com.jammking.loopbox.domain.port.out.ImageVersionRepository
@@ -64,12 +65,13 @@ class ProjectManagementServiceTest {
     @Test
     fun `createProject should save and return project`() {
         // Given
+        val userId = UserId("user-1")
         val title = "Test Project"
-        val project = Project(title = title)
+        val project = Project(ownerUserId = userId, title = title)
         whenever(projectRepository.save(any())).thenReturn(project)
 
         // When
-        val result = projectManagementService.createProject(title)
+        val result = projectManagementService.createProject(userId, title)
 
         // Then
         assertEquals(title, result.title)
@@ -79,8 +81,9 @@ class ProjectManagementServiceTest {
     @Test
     fun `deleteProject should delete project and related data`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId(UUID.randomUUID().toString())
-        val project = Project(id = projectId, title = "Test Project")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Test Project")
         val musicId = MusicId("music-1")
         val imageId = ImageId("image-1")
         
@@ -108,7 +111,7 @@ class ProjectManagementServiceTest {
         whenever(imageTaskRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        projectManagementService.deleteProject(projectId)
+        projectManagementService.deleteProject(userId, projectId)
 
         // Then
         verify(musicRepository).deleteById(musicId)
@@ -127,28 +130,30 @@ class ProjectManagementServiceTest {
     @Test
     fun `deleteProject should throw exception when project not found`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("non-existent-id")
         whenever(projectRepository.findById(projectId)).thenReturn(null)
 
         // When & Then
         assertThrows(ProjectNotFoundException::class.java) {
-            projectManagementService.deleteProject(projectId)
+            projectManagementService.deleteProject(userId, projectId)
         }
     }
 
     @Test
     fun `renameTitle should update project title`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val oldTitle = "Old Title"
         val newTitle = "New Title"
-        val project = Project(id = projectId, title = oldTitle)
+        val project = Project(id = projectId, ownerUserId = userId, title = oldTitle)
         
         whenever(projectRepository.findById(projectId)).thenReturn(project)
         whenever(projectRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        projectManagementService.renameTitle(projectId, newTitle)
+        projectManagementService.renameTitle(userId, projectId, newTitle)
 
         // Then
         assertEquals(newTitle, project.title)

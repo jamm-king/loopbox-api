@@ -5,9 +5,12 @@ import com.jammking.loopbox.domain.entity.video.Video
 import com.jammking.loopbox.domain.entity.video.VideoImageGroup
 import com.jammking.loopbox.domain.entity.video.VideoSegment
 import com.jammking.loopbox.domain.entity.video.VideoStatus
+import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.exception.image.ImageVersionNotFoundException
 import com.jammking.loopbox.domain.exception.music.MusicVersionNotFoundException
+import com.jammking.loopbox.domain.exception.project.InvalidProjectOwnerException
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.exception.video.InvalidVideoEditException
 import com.jammking.loopbox.domain.exception.video.VideoNotFoundException
@@ -39,6 +42,7 @@ class VideoManagementService(
     override fun updateVideo(command: VideoManagementUseCase.UpdateVideoCommand): Video {
         val project = projectRepository.findById(command.projectId)
             ?: throw ProjectNotFoundException.byProjectId(command.projectId)
+        requireOwner(project, command.userId)
 
         val segments = command.segments.map { input ->
             val version = musicVersionRepository.findById(input.musicVersionId)
@@ -66,9 +70,10 @@ class VideoManagementService(
         return saved
     }
 
-    override fun requestRender(projectId: ProjectId): Video {
+    override fun requestRender(userId: UserId, projectId: ProjectId): Video {
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)
+        requireOwner(project, userId)
         log.info("Request render for projectId={}", project.id.value)
 
         val video = videoRepository.findByProjectId(projectId)
@@ -93,6 +98,12 @@ class VideoManagementService(
                 videoRepository.save(video)
             }
             throw e
+        }
+    }
+
+    private fun requireOwner(project: Project, userId: UserId) {
+        if (project.ownerUserId != userId) {
+            throw InvalidProjectOwnerException(project.id, userId, project.ownerUserId)
         }
     }
 

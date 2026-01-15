@@ -7,10 +7,13 @@ import com.jammking.loopbox.domain.entity.music.Music
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicOperation
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
+import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
 import com.jammking.loopbox.domain.exception.music.MusicNotFoundException
 import com.jammking.loopbox.domain.exception.music.MusicVersionNotFoundException
+import com.jammking.loopbox.domain.exception.project.InvalidProjectOwnerException
 import com.jammking.loopbox.domain.exception.project.ProjectMusicInconsistentStateException
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
@@ -31,9 +34,10 @@ class MusicManagementService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun createMusic(projectId: ProjectId, alias: String?): Music {
+    override fun createMusic(userId: UserId, projectId: ProjectId, alias: String?): Music {
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)
+        requireOwner(project, userId)
 
         val music = Music(projectId = projectId, alias = alias)
         val saved = musicRepository.save(music)
@@ -45,6 +49,9 @@ class MusicManagementService(
     override fun updateMusic(command: MusicManagementUseCase.UpdateMusicCommand): Music {
         val music = musicRepository.findById(command.musicId)
             ?: throw MusicNotFoundException.byMusicId(command.musicId)
+        val project = projectRepository.findById(music.projectId)
+            ?: throw ProjectMusicInconsistentStateException.projectMissingForMusic(music.id, music.projectId)
+        requireOwner(project, command.userId)
 
         val normalizedAlias = command.alias?.trim()?.ifEmpty { null }
         music.updateAlias(normalizedAlias)
@@ -55,11 +62,12 @@ class MusicManagementService(
         return saved
     }
 
-    override fun deleteMusic(musicId: MusicId) {
+    override fun deleteMusic(userId: UserId, musicId: MusicId) {
         val music = musicRepository.findById(musicId)
             ?: throw MusicNotFoundException.byMusicId(musicId)
         val project = projectRepository.findById(music.projectId)
             ?: throw ProjectMusicInconsistentStateException.projectMissingForMusic(music.id, music.projectId)
+        requireOwner(project, userId)
 
         val tasks = taskRepository.findByMusicId(music.id)
         tasks.forEach { task ->
@@ -91,6 +99,7 @@ class MusicManagementService(
 
         val project = projectRepository.findById(music.projectId)
             ?: throw ProjectMusicInconsistentStateException.projectMissingForMusic(music.id, music.projectId)
+        requireOwner(project, command.userId)
 
         music.startVersionGeneration(config)
         val savedMusic = musicRepository.save(music)
@@ -130,9 +139,12 @@ class MusicManagementService(
         }
     }
 
-    override fun deleteVersion(musicId: MusicId, versionId: MusicVersionId): Music {
+    override fun deleteVersion(userId: UserId, musicId: MusicId, versionId: MusicVersionId): Music {
         val music = musicRepository.findById(musicId)
             ?: throw MusicNotFoundException.byMusicId(musicId)
+        val project = projectRepository.findById(music.projectId)
+            ?: throw ProjectMusicInconsistentStateException.projectMissingForMusic(music.id, music.projectId)
+        requireOwner(project, userId)
         val version = versionRepository.findById(versionId)
             ?: throw MusicVersionNotFoundException.byVersionId(versionId)
 
@@ -154,14 +166,23 @@ class MusicManagementService(
         }
     }
 
-    override fun acknowledgeFailure(musicId: MusicId): Music {
+    override fun acknowledgeFailure(userId: UserId, musicId: MusicId): Music {
         val music = musicRepository.findById(musicId)
             ?: throw MusicNotFoundException.byMusicId(musicId)
+        val project = projectRepository.findById(music.projectId)
+            ?: throw ProjectMusicInconsistentStateException.projectMissingForMusic(music.id, music.projectId)
+        requireOwner(project, userId)
 
         music.acknowledgeFailure()
         val saved = musicRepository.save(music)
         log.info("Acknowledged music's failure status: musicId=${musicId.value}")
 
         return saved
+    }
+
+    private fun requireOwner(project: Project, userId: UserId) {
+        if (project.ownerUserId != userId) {
+            throw InvalidProjectOwnerException(project.id, userId, project.ownerUserId)
+        }
     }
 }

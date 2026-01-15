@@ -13,6 +13,7 @@ import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersion
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -53,14 +54,16 @@ class MusicControllerTest {
     @Test
     fun `createMusic should return created music`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val request = CreateMusicRequest(alias = "My Song")
         val music = Music(id = MusicId("music-1"), projectId = ProjectId(projectId), alias = request.alias)
-        whenever(musicManagementUseCase.createMusic(ProjectId(projectId), request.alias)).thenReturn(music)
+        whenever(musicManagementUseCase.createMusic(UserId(userId), ProjectId(projectId), request.alias)).thenReturn(music)
 
         // When & Then
         mockMvc.perform(
             post("/api/project/{projectId}/music/create", projectId)
+                .param("userId", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -73,6 +76,7 @@ class MusicControllerTest {
     @Test
     fun `getMusic should return music detail`() {
         // Given
+        val userId = "user-1"
         val musicId = "music-1"
         val projectId = "project-1"
         val music = Music(id = MusicId(musicId), projectId = ProjectId(projectId), alias = "Track 1")
@@ -84,10 +88,11 @@ class MusicControllerTest {
             durationSeconds = 30
         )
         val result = MusicQueryUseCase.GetMusicDetailResult(music, listOf(version))
-        whenever(musicQueryUseCase.getMusicDetail(MusicId(musicId))).thenReturn(result)
+        whenever(musicQueryUseCase.getMusicDetail(UserId(userId), MusicId(musicId))).thenReturn(result)
 
         // When & Then
-        mockMvc.perform(get("/api/project/{projectId}/music/{musicId}", projectId, musicId))
+        mockMvc.perform(get("/api/project/{projectId}/music/{musicId}", projectId, musicId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.music.id").value(musicId))
             .andExpect(jsonPath("$.music.alias").value("Track 1"))
@@ -99,13 +104,15 @@ class MusicControllerTest {
     @Test
     fun `getMusicList should return list of music`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val music1 = Music(id = MusicId("m1"), projectId = ProjectId(projectId))
         val music2 = Music(id = MusicId("m2"), projectId = ProjectId(projectId))
-        whenever(musicQueryUseCase.getMusicListForProject(ProjectId(projectId))).thenReturn(listOf(music1, music2))
+        whenever(musicQueryUseCase.getMusicListForProject(UserId(userId), ProjectId(projectId))).thenReturn(listOf(music1, music2))
 
         // When & Then
-        mockMvc.perform(get("/api/project/{projectId}/music", projectId))
+        mockMvc.perform(get("/api/project/{projectId}/music", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.musicList[0].id").value("m1"))
             .andExpect(jsonPath("$.musicList[1].id").value("m2"))
@@ -114,6 +121,7 @@ class MusicControllerTest {
     @Test
     fun `updateMusic should update alias`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val musicId = "music-1"
         val request = UpdateMusicRequest(alias = "Updated Name")
@@ -123,6 +131,7 @@ class MusicControllerTest {
         // When & Then
         mockMvc.perform(
             patch("/api/project/{projectId}/music/{musicId}", projectId, musicId)
+                .param("userId", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -134,19 +143,22 @@ class MusicControllerTest {
     @Test
     fun `deleteMusic should call delete usecase`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val musicId = "music-1"
 
         // When & Then
-        mockMvc.perform(delete("/api/project/{projectId}/music/{musicId}", projectId, musicId))
+        mockMvc.perform(delete("/api/project/{projectId}/music/{musicId}", projectId, musicId)
+            .param("userId", userId))
             .andExpect(status().isOk)
 
-        verify(musicManagementUseCase).deleteMusic(MusicId(musicId))
+        verify(musicManagementUseCase).deleteMusic(UserId(userId), MusicId(musicId))
     }
 
     @Test
     fun `generateVersion should call usecase and return music`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val musicId = "music-1"
         val request = GenerateVersionRequest(
@@ -161,6 +173,7 @@ class MusicControllerTest {
         // When & Then
         mockMvc.perform(
             post("/api/project/{projectId}/music/{musicId}/version/generate", projectId, musicId)
+                .param("userId", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -170,6 +183,7 @@ class MusicControllerTest {
         val captor = argumentCaptor<MusicManagementUseCase.GenerateVersionCommand>()
         verify(musicManagementUseCase).generateVersion(captor.capture())
         val command = captor.firstValue
+        assertEquals(UserId(userId), command.userId)
         assertEquals(MusicAiProvider.SUNO, command.provider)
         assertEquals("calm", command.config.mood)
         assertEquals(120, command.config.bpm)
@@ -179,20 +193,22 @@ class MusicControllerTest {
     @Test
     fun `deleteVersion should call delete usecase`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val musicId = "music-1"
         val versionId = "v1"
         val music = Music(id = MusicId(musicId), projectId = ProjectId(projectId))
-        whenever(musicManagementUseCase.deleteVersion(MusicId(musicId), MusicVersionId(versionId)))
+        whenever(musicManagementUseCase.deleteVersion(UserId(userId), MusicId(musicId), MusicVersionId(versionId)))
             .thenReturn(music)
 
         // When & Then
         mockMvc.perform(
             delete("/api/project/{projectId}/music/{musicId}/version/{versionId}", projectId, musicId, versionId)
+                .param("userId", userId)
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.music.id").value(musicId))
 
-        verify(musicManagementUseCase).deleteVersion(MusicId(musicId), MusicVersionId(versionId))
+        verify(musicManagementUseCase).deleteVersion(UserId(userId), MusicId(musicId), MusicVersionId(versionId))
     }
 }

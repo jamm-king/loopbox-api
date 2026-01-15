@@ -13,6 +13,7 @@ import com.jammking.loopbox.domain.entity.image.ImageConfig
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.ImageAiProvider
 import com.jammking.loopbox.domain.exception.task.InvalidImageAiProvider
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -32,26 +34,30 @@ class ImageController(
 
     @PostMapping("/create")
     fun createImage(
+        @RequestParam userId: String,
         @PathVariable projectId: String
     ): CreateImageResponse {
-        val image = imageManagementUseCase.createImage(ProjectId(projectId))
+        val image = imageManagementUseCase.createImage(UserId(userId), ProjectId(projectId))
         val webImage = image.toWeb()
         return CreateImageResponse(webImage)
     }
 
     @GetMapping("/{imageId}")
     fun getImage(
+        @RequestParam userId: String,
+        @PathVariable projectId: String,
         @PathVariable imageId: String
     ): GetImageResponse {
-        val getResult = imageQueryUseCase.getImageDetail(ImageId(imageId))
+        val getResult = imageQueryUseCase.getImageDetail(UserId(userId), ImageId(imageId))
         return GetImageResponse.from(getResult)
     }
 
     @GetMapping
     fun getImageList(
+        @RequestParam userId: String,
         @PathVariable projectId: String
     ): GetImageListResponse {
-        val images = imageQueryUseCase.getImageListForProject(ProjectId(projectId))
+        val images = imageQueryUseCase.getImageListForProject(UserId(userId), ProjectId(projectId))
         return GetImageListResponse(
             images = images.map { it.toWeb() }
         )
@@ -59,13 +65,16 @@ class ImageController(
 
     @DeleteMapping("/{imageId}")
     fun deleteImage(
+        @RequestParam userId: String,
+        @PathVariable projectId: String,
         @PathVariable imageId: String
     ) {
-        imageManagementUseCase.deleteImage(ImageId(imageId))
+        imageManagementUseCase.deleteImage(UserId(userId), ImageId(imageId))
     }
 
     @PostMapping("/{imageId}/version/generate")
     fun generateVersion(
+        @RequestParam userId: String,
         @PathVariable projectId: String,
         @PathVariable imageId: String,
         @RequestBody request: GenerateImageVersionRequest
@@ -76,6 +85,7 @@ class ImageController(
             throw InvalidImageAiProvider(request.provider)
         }
         val command = ImageManagementUseCase.GenerateVersionCommand(
+            userId = UserId(userId),
             imageId = ImageId(imageId),
             config = request.toImageConfig(),
             provider = provider
@@ -87,11 +97,12 @@ class ImageController(
 
     @DeleteMapping("/{imageId}/version/{versionId}")
     fun deleteVersion(
+        @RequestParam userId: String,
         @PathVariable projectId: String,
         @PathVariable imageId: String,
         @PathVariable versionId: String
     ): DeleteImageVersionResponse {
-        val image = imageManagementUseCase.deleteVersion(ImageId(imageId), ImageVersionId(versionId))
+        val image = imageManagementUseCase.deleteVersion(UserId(userId), ImageId(imageId), ImageVersionId(versionId))
         val webImage = image.toWeb()
         return DeleteImageVersionResponse(webImage)
     }

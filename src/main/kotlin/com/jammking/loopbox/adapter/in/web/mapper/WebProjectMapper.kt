@@ -7,6 +7,7 @@ object WebProjectMapper {
     fun Project.toWeb() =
         WebProject(
             id = id.value,
+            ownerUserId = ownerUserId.value,
             title = title,
             status = status.name
         )

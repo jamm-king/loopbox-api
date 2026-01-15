@@ -2,8 +2,11 @@ package com.jammking.loopbox.application.service
 
 import com.jammking.loopbox.application.port.`in`.GetVideoFileUseCase
 import com.jammking.loopbox.application.port.out.ResolveLocalVideoPort
+import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.exception.file.VideoFileNotFoundException
+import com.jammking.loopbox.domain.exception.project.InvalidProjectOwnerException
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.exception.video.InvalidVideoStateException
 import com.jammking.loopbox.domain.exception.video.VideoNotFoundException
@@ -20,9 +23,10 @@ class GetVideoFileService(
     private val resolveLocalVideoPort: ResolveLocalVideoPort
 ): GetVideoFileUseCase {
 
-    override fun getVideoTarget(projectId: ProjectId): GetVideoFileUseCase.VideoStreamTarget {
+    override fun getVideoTarget(userId: UserId, projectId: ProjectId): GetVideoFileUseCase.VideoStreamTarget {
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)
+        requireOwner(project, userId)
 
         val video = videoRepository.findByProjectId(project.id)
             ?: throw VideoNotFoundException.byProjectId(project.id)
@@ -38,5 +42,11 @@ class GetVideoFileService(
             ?: throw VideoFileNotFoundException.byVideoFileId(fileId)
 
         return resolveLocalVideoPort.resolve(file.path)
+    }
+
+    private fun requireOwner(project: Project, userId: UserId) {
+        if (project.ownerUserId != userId) {
+            throw InvalidProjectOwnerException(project.id, userId, project.ownerUserId)
+        }
     }
 }

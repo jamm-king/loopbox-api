@@ -2,6 +2,7 @@ package com.jammking.loopbox.domain.entity.project
 
 import com.jammking.loopbox.domain.exception.project.InvalidProjectStateException
 import com.jammking.loopbox.domain.exception.project.InvalidProjectTitleException
+import com.jammking.loopbox.domain.entity.user.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -13,14 +14,14 @@ class ProjectTest {
     @Test
     fun `constructor should throw exception when title is blank`() {
         assertThrows(InvalidProjectTitleException::class.java) {
-            Project(title = "")
+            Project(ownerUserId = UserId("user-1"), title = "")
         }
     }
 
     @Test
     fun `rename should update title and updatedAt`() {
         // Given
-        val project = Project(title = "Old Title")
+        val project = Project(ownerUserId = UserId("user-1"), title = "Old Title")
         val now = Instant.now().plusSeconds(10)
 
         // When
@@ -34,7 +35,7 @@ class ProjectTest {
     @Test
     fun `rename should throw exception when title is blank`() {
         // Given
-        val project = Project(title = "Old Title")
+        val project = Project(ownerUserId = UserId("user-1"), title = "Old Title")
 
         // When & Then
         assertThrows(InvalidProjectTitleException::class.java) {
@@ -45,7 +46,7 @@ class ProjectTest {
     @Test
     fun `markDraft should update status to DRAFT`() {
         // Given
-        val project = Project(title = "Title", status = ProjectStatus.MUSIC_READY)
+        val project = Project(ownerUserId = UserId("user-1"), title = "Title", status = ProjectStatus.MUSIC_READY)
         val now = Instant.now().plusSeconds(10)
 
         // When
@@ -59,7 +60,7 @@ class ProjectTest {
     @Test
     fun `markDraft should throw exception if not in MUSIC_READY state`() {
         // Given
-        val project = Project(title = "Title", status = ProjectStatus.DRAFT)
+        val project = Project(ownerUserId = UserId("user-1"), title = "Title", status = ProjectStatus.DRAFT)
 
         // When & Then
         assertThrows(InvalidProjectStateException::class.java) {
@@ -70,7 +71,7 @@ class ProjectTest {
     @Test
     fun `markMusicReady should update status to MUSIC_READY`() {
         // Given
-        val project = Project(title = "Title", status = ProjectStatus.DRAFT)
+        val project = Project(ownerUserId = UserId("user-1"), title = "Title", status = ProjectStatus.DRAFT)
         val now = Instant.now().plusSeconds(10)
 
         // When
