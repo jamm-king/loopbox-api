@@ -42,3 +42,6 @@ out/
 ### App ###
 **/*.yaml
 /data
+.env
+.env.*
+!.env.example
