@@ -1,6 +1,7 @@
 package com.jammking.loopbox.adapter.`in`.web.controller
 
 import com.jammking.loopbox.adapter.`in`.web.support.AudioStreamResponder
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.GetMusicVersionAudioUseCase
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
@@ -20,21 +21,24 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RequestMapping("/api/music/{musicId}/versions/{versionId}")
 class MusicVersionAudioController(
     private val getMusicVersionAudioUseCase: GetMusicVersionAudioUseCase,
-    private val audioStreamResponder: AudioStreamResponder
+    private val audioStreamResponder: AudioStreamResponder,
+    private val authenticatedUserResolver: AuthenticatedUserResolver
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     @GetMapping("/audio")
     fun streamAudio(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
+        @RequestParam(required = false) accessToken: String?,
         @PathVariable musicId: String,
         @PathVariable versionId: String,
         @RequestHeader headers: HttpHeaders
     ): ResponseEntity<StreamingResponseBody> {
 
+        val userId = authenticatedUserResolver.resolve(authorization, accessToken)
         val target = getMusicVersionAudioUseCase.getAudioTarget(
-            userId = UserId(userId),
+            userId = userId,
             musicId = MusicId(musicId),
             versionId = MusicVersionId(versionId)
         )

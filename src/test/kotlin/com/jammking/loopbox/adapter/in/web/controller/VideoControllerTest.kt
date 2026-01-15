@@ -3,6 +3,7 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jammking.loopbox.adapter.`in`.web.dto.error.ErrorResponseFactory
 import com.jammking.loopbox.adapter.`in`.web.dto.video.UpdateVideoRequest
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.VideoManagementUseCase
 import com.jammking.loopbox.application.port.`in`.VideoQueryUseCase
 import com.jammking.loopbox.domain.entity.image.ImageId
@@ -16,6 +17,7 @@ import com.jammking.loopbox.domain.entity.video.VideoImageGroup
 import com.jammking.loopbox.domain.entity.video.VideoSegment
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -43,6 +45,9 @@ class VideoControllerTest {
     @MockitoBean
     private lateinit var errorResponseFactory: ErrorResponseFactory
 
+    @MockitoBean
+    private lateinit var authenticatedUserResolver: AuthenticatedUserResolver
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
@@ -50,6 +55,7 @@ class VideoControllerTest {
     fun `getVideo should return video detail`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val video = Video(
             projectId = ProjectId(projectId),
@@ -70,10 +76,11 @@ class VideoControllerTest {
             )
         )
         whenever(videoQueryUseCase.getVideoDetail(UserId(userId), ProjectId(projectId))).thenReturn(video)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(get("/api/project/{projectId}/video", projectId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.video.projectId").value(projectId))
             .andExpect(jsonPath("$.video.segments[0].musicId").value("music-1"))
@@ -84,6 +91,7 @@ class VideoControllerTest {
     fun `updateVideo should update timeline`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val request = UpdateVideoRequest(
             segments = listOf(UpdateVideoRequest.SegmentRequest("music-version-1")),
@@ -100,11 +108,12 @@ class VideoControllerTest {
             )
         )
         whenever(videoManagementUseCase.updateVideo(any())).thenReturn(video)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(
             put("/api/project/{projectId}/video", projectId)
-                .param("userId", userId)
+                .header("Authorization", authorization)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -117,13 +126,15 @@ class VideoControllerTest {
     fun `renderVideo should return rendered video`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val video = Video(projectId = ProjectId(projectId))
         whenever(videoManagementUseCase.requestRender(UserId(userId), ProjectId(projectId))).thenReturn(video)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(post("/api/project/{projectId}/video/render", projectId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.video.projectId").value(projectId))
     }

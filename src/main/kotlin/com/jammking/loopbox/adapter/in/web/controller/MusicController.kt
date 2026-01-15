@@ -2,6 +2,7 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 
 import com.jammking.loopbox.adapter.`in`.web.dto.music.*
 import com.jammking.loopbox.adapter.`in`.web.mapper.WebMusicMapper.toWeb
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.MusicManagementUseCase
 import com.jammking.loopbox.application.port.`in`.MusicQueryUseCase
 import com.jammking.loopbox.domain.entity.music.MusicConfig
@@ -18,38 +19,42 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/project/{projectId}/music")
 class MusicController(
     private val musicQueryUseCase: MusicQueryUseCase,
-    private val musicManagementUseCase: MusicManagementUseCase
+    private val musicManagementUseCase: MusicManagementUseCase,
+    private val authenticatedUserResolver: AuthenticatedUserResolver
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     @PostMapping("/create")
     fun createMusic(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @RequestBody(required = false) request: CreateMusicRequest?
     ): CreateMusicResponse {
-        val music = musicManagementUseCase.createMusic(UserId(userId), ProjectId(projectId), request?.alias)
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val music = musicManagementUseCase.createMusic(userId, ProjectId(projectId), request?.alias)
         val webMusic = music.toWeb()
         return CreateMusicResponse(webMusic)
     }
 
     @GetMapping("/{musicId}")
     fun getMusic(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable musicId: String
     ): GetMusicResponse {
-        val getResult = musicQueryUseCase.getMusicDetail(UserId(userId), MusicId(musicId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val getResult = musicQueryUseCase.getMusicDetail(userId, MusicId(musicId))
         return GetMusicResponse.from(getResult)
     }
 
     @GetMapping
     fun getMusicList(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String
     ): GetMusicListResponse {
-        val musicList = musicQueryUseCase.getMusicListForProject(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val musicList = musicQueryUseCase.getMusicListForProject(userId, ProjectId(projectId))
         return GetMusicListResponse(
             musicList = musicList.map { it.toWeb() }
         )
@@ -57,13 +62,14 @@ class MusicController(
 
     @PatchMapping("/{musicId}")
     fun updateMusic(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable musicId: String,
         @RequestBody request: UpdateMusicRequest
     ): UpdateMusicResponse {
+        val userId = authenticatedUserResolver.resolve(authorization)
         val command = MusicManagementUseCase.UpdateMusicCommand(
-            userId = UserId(userId),
+            userId = userId,
             musicId = MusicId(musicId),
             alias = request.alias
         )
@@ -74,27 +80,29 @@ class MusicController(
 
     @DeleteMapping("/{musicId}")
     fun deleteMusic(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable musicId: String
     ) {
-        musicManagementUseCase.deleteMusic(UserId(userId), MusicId(musicId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        musicManagementUseCase.deleteMusic(userId, MusicId(musicId))
     }
 
     @PostMapping("/{musicId}/version/generate")
     fun generateVersion(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable musicId: String,
         @RequestBody request: GenerateVersionRequest
     ): GenerateVersionResponse {
+        val userId = authenticatedUserResolver.resolve(authorization)
         val provider = try {
             MusicAiProvider.valueOf(request.provider)
         } catch(e: IllegalArgumentException) {
             throw InvalidMusicAiProvider(request.provider)
         }
         val command = MusicManagementUseCase.GenerateVersionCommand(
-            userId = UserId(userId),
+            userId = userId,
             musicId = MusicId(musicId),
             config = request.toMusicConfig(),
             provider = provider
@@ -106,12 +114,13 @@ class MusicController(
 
     @DeleteMapping("/{musicId}/version/{versionId}")
     fun deleteVersion(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable musicId: String,
         @PathVariable versionId: String
     ): DeleteVersionResponse {
-        val music = musicManagementUseCase.deleteVersion(UserId(userId), MusicId(musicId), MusicVersionId(versionId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val music = musicManagementUseCase.deleteVersion(userId, MusicId(musicId), MusicVersionId(versionId))
         val webMusic = music.toWeb()
         return DeleteVersionResponse(webMusic)
     }

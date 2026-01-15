@@ -1,9 +1,11 @@
 package com.jammking.loopbox.application.service
 
 import com.jammking.loopbox.application.port.`in`.VideoManagementUseCase
+import com.jammking.loopbox.domain.entity.image.Image
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersion
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
+import com.jammking.loopbox.domain.entity.music.Music
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersion
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
@@ -18,7 +20,9 @@ import com.jammking.loopbox.application.port.out.VideoFileStorage
 import com.jammking.loopbox.application.port.out.VideoRenderClient
 import com.jammking.loopbox.domain.port.out.AudioFileRepository
 import com.jammking.loopbox.domain.port.out.ImageFileRepository
+import com.jammking.loopbox.domain.port.out.ImageRepository
 import com.jammking.loopbox.domain.port.out.ImageVersionRepository
+import com.jammking.loopbox.domain.port.out.MusicRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import com.jammking.loopbox.domain.port.out.VideoRepository
@@ -44,7 +48,13 @@ class VideoManagementServiceTest {
     private lateinit var videoRepository: VideoRepository
 
     @Mock
+    private lateinit var musicRepository: MusicRepository
+
+    @Mock
     private lateinit var musicVersionRepository: MusicVersionRepository
+
+    @Mock
+    private lateinit var imageRepository: ImageRepository
 
     @Mock
     private lateinit var imageVersionRepository: ImageVersionRepository
@@ -72,21 +82,29 @@ class VideoManagementServiceTest {
         whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
 
         val musicVersionId = MusicVersionId("music-version-1")
+        val musicId = MusicId("music-1")
         val musicVersion = MusicVersion(
             id = musicVersionId,
-            musicId = MusicId("music-1"),
+            musicId = musicId,
             config = com.jammking.loopbox.domain.entity.music.MusicConfig(),
             durationSeconds = 30
         )
         whenever(musicVersionRepository.findById(musicVersionId)).thenReturn(musicVersion)
+        whenever(musicRepository.findById(musicId)).thenReturn(
+            Music(id = musicId, projectId = projectId)
+        )
 
         val imageVersionId = ImageVersionId("image-version-1")
+        val imageId = ImageId("image-1")
         val imageVersion = ImageVersion(
             id = imageVersionId,
-            imageId = ImageId("image-1"),
+            imageId = imageId,
             config = com.jammking.loopbox.domain.entity.image.ImageConfig()
         )
         whenever(imageVersionRepository.findById(imageVersionId)).thenReturn(imageVersion)
+        whenever(imageRepository.findById(imageId)).thenReturn(
+            Image(id = imageId, projectId = projectId)
+        )
 
         whenever(videoRepository.findByProjectId(projectId)).thenReturn(null)
         whenever(videoRepository.save(any())).thenAnswer { it.arguments[0] }
@@ -121,21 +139,29 @@ class VideoManagementServiceTest {
         whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
 
         val musicVersionId = MusicVersionId("music-version-1")
+        val musicId = MusicId("music-1")
         val musicVersion = MusicVersion(
             id = musicVersionId,
-            musicId = MusicId("music-1"),
+            musicId = musicId,
             config = com.jammking.loopbox.domain.entity.music.MusicConfig(),
             durationSeconds = 30
         )
         whenever(musicVersionRepository.findById(musicVersionId)).thenReturn(musicVersion)
+        whenever(musicRepository.findById(musicId)).thenReturn(
+            Music(id = musicId, projectId = projectId)
+        )
 
         val imageVersionId = ImageVersionId("image-version-1")
+        val imageId = ImageId("image-1")
         val imageVersion = ImageVersion(
             id = imageVersionId,
-            imageId = ImageId("image-1"),
+            imageId = imageId,
             config = com.jammking.loopbox.domain.entity.image.ImageConfig()
         )
         whenever(imageVersionRepository.findById(imageVersionId)).thenReturn(imageVersion)
+        whenever(imageRepository.findById(imageId)).thenReturn(
+            Image(id = imageId, projectId = projectId)
+        )
 
         val command = VideoManagementUseCase.UpdateVideoCommand(
             userId = userId,
@@ -159,6 +185,88 @@ class VideoManagementServiceTest {
         )
 
         // When & Then
+        assertThrows(InvalidVideoEditException::class.java) {
+            videoManagementService.updateVideo(command)
+        }
+    }
+
+    @Test
+    fun `updateVideo should reject music versions from another project`() {
+        val userId = UserId("user-1")
+        val projectId = ProjectId("project-1")
+        val otherProjectId = ProjectId("project-2")
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
+
+        val musicVersionId = MusicVersionId("music-version-1")
+        val musicId = MusicId("music-1")
+        val musicVersion = MusicVersion(
+            id = musicVersionId,
+            musicId = musicId,
+            config = com.jammking.loopbox.domain.entity.music.MusicConfig(),
+            durationSeconds = 30
+        )
+        whenever(musicVersionRepository.findById(musicVersionId)).thenReturn(musicVersion)
+        whenever(musicRepository.findById(musicId)).thenReturn(
+            Music(id = musicId, projectId = otherProjectId)
+        )
+
+        val command = VideoManagementUseCase.UpdateVideoCommand(
+            userId = userId,
+            projectId = projectId,
+            segments = listOf(VideoManagementUseCase.SegmentInput(musicVersionId)),
+            imageGroups = emptyList()
+        )
+
+        assertThrows(InvalidVideoEditException::class.java) {
+            videoManagementService.updateVideo(command)
+        }
+    }
+
+    @Test
+    fun `updateVideo should reject image versions from another project`() {
+        val userId = UserId("user-1")
+        val projectId = ProjectId("project-1")
+        val otherProjectId = ProjectId("project-2")
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
+
+        val musicVersionId = MusicVersionId("music-version-1")
+        val musicId = MusicId("music-1")
+        val musicVersion = MusicVersion(
+            id = musicVersionId,
+            musicId = musicId,
+            config = com.jammking.loopbox.domain.entity.music.MusicConfig(),
+            durationSeconds = 30
+        )
+        whenever(musicVersionRepository.findById(musicVersionId)).thenReturn(musicVersion)
+        whenever(musicRepository.findById(musicId)).thenReturn(
+            Music(id = musicId, projectId = projectId)
+        )
+
+        val imageVersionId = ImageVersionId("image-version-1")
+        val imageId = ImageId("image-1")
+        val imageVersion = ImageVersion(
+            id = imageVersionId,
+            imageId = imageId,
+            config = com.jammking.loopbox.domain.entity.image.ImageConfig()
+        )
+        whenever(imageVersionRepository.findById(imageVersionId)).thenReturn(imageVersion)
+        whenever(imageRepository.findById(imageId)).thenReturn(
+            Image(id = imageId, projectId = otherProjectId)
+        )
+
+        val command = VideoManagementUseCase.UpdateVideoCommand(
+            userId = userId,
+            projectId = projectId,
+            segments = listOf(VideoManagementUseCase.SegmentInput(musicVersionId)),
+            imageGroups = listOf(
+                VideoManagementUseCase.ImageGroupInput(
+                    imageVersionId = imageVersionId,
+                    segmentIndexStart = 0,
+                    segmentIndexEnd = 0
+                )
+            )
+        )
+
         assertThrows(InvalidVideoEditException::class.java) {
             videoManagementService.updateVideo(command)
         }

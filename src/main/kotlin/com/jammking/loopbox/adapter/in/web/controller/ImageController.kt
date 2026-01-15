@@ -7,6 +7,7 @@ import com.jammking.loopbox.adapter.`in`.web.dto.image.GenerateImageVersionRespo
 import com.jammking.loopbox.adapter.`in`.web.dto.image.GetImageListResponse
 import com.jammking.loopbox.adapter.`in`.web.dto.image.GetImageResponse
 import com.jammking.loopbox.adapter.`in`.web.mapper.WebImageMapper.toWeb
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.ImageManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ImageQueryUseCase
 import com.jammking.loopbox.domain.entity.image.ImageConfig
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -29,35 +31,39 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/project/{projectId}/image")
 class ImageController(
     private val imageQueryUseCase: ImageQueryUseCase,
-    private val imageManagementUseCase: ImageManagementUseCase
+    private val imageManagementUseCase: ImageManagementUseCase,
+    private val authenticatedUserResolver: AuthenticatedUserResolver
 ) {
 
     @PostMapping("/create")
     fun createImage(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String
     ): CreateImageResponse {
-        val image = imageManagementUseCase.createImage(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val image = imageManagementUseCase.createImage(userId, ProjectId(projectId))
         val webImage = image.toWeb()
         return CreateImageResponse(webImage)
     }
 
     @GetMapping("/{imageId}")
     fun getImage(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable imageId: String
     ): GetImageResponse {
-        val getResult = imageQueryUseCase.getImageDetail(UserId(userId), ImageId(imageId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val getResult = imageQueryUseCase.getImageDetail(userId, ImageId(imageId))
         return GetImageResponse.from(getResult)
     }
 
     @GetMapping
     fun getImageList(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String
     ): GetImageListResponse {
-        val images = imageQueryUseCase.getImageListForProject(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val images = imageQueryUseCase.getImageListForProject(userId, ProjectId(projectId))
         return GetImageListResponse(
             images = images.map { it.toWeb() }
         )
@@ -65,27 +71,29 @@ class ImageController(
 
     @DeleteMapping("/{imageId}")
     fun deleteImage(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable imageId: String
     ) {
-        imageManagementUseCase.deleteImage(UserId(userId), ImageId(imageId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        imageManagementUseCase.deleteImage(userId, ImageId(imageId))
     }
 
     @PostMapping("/{imageId}/version/generate")
     fun generateVersion(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable imageId: String,
         @RequestBody request: GenerateImageVersionRequest
     ): GenerateImageVersionResponse {
+        val userId = authenticatedUserResolver.resolve(authorization)
         val provider = try {
             ImageAiProvider.valueOf(request.provider)
         } catch(e: IllegalArgumentException) {
             throw InvalidImageAiProvider(request.provider)
         }
         val command = ImageManagementUseCase.GenerateVersionCommand(
-            userId = UserId(userId),
+            userId = userId,
             imageId = ImageId(imageId),
             config = request.toImageConfig(),
             provider = provider
@@ -97,12 +105,13 @@ class ImageController(
 
     @DeleteMapping("/{imageId}/version/{versionId}")
     fun deleteVersion(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @PathVariable imageId: String,
         @PathVariable versionId: String
     ): DeleteImageVersionResponse {
-        val image = imageManagementUseCase.deleteVersion(UserId(userId), ImageId(imageId), ImageVersionId(versionId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val image = imageManagementUseCase.deleteVersion(userId, ImageId(imageId), ImageVersionId(versionId))
         val webImage = image.toWeb()
         return DeleteImageVersionResponse(webImage)
     }

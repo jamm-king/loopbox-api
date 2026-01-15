@@ -7,6 +7,7 @@ import com.jammking.loopbox.adapter.`in`.web.dto.project.GetAllProjectResponse
 import com.jammking.loopbox.adapter.`in`.web.dto.project.UpdateProjectRequest
 import com.jammking.loopbox.adapter.`in`.web.dto.project.UpdateProjectResponse
 import com.jammking.loopbox.adapter.`in`.web.mapper.WebProjectMapper.toWeb
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.ProjectManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ProjectQueryUseCase
 import com.jammking.loopbox.domain.entity.project.ProjectId
@@ -18,15 +19,17 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/project")
 class ProjectController(
     private val projectQueryUseCase: ProjectQueryUseCase,
-    private val projectManagementUseCase: ProjectManagementUseCase
+    private val projectManagementUseCase: ProjectManagementUseCase,
+    private val authenticatedUserResolver: AuthenticatedUserResolver
 ) {
     @PostMapping
     fun createProject(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @RequestBody request: CreateProjectRequest
     ): CreateProjectResponse {
+        val userId = authenticatedUserResolver.resolve(authorization)
         val project = projectManagementUseCase.createProject(
-            userId = UserId(userId),
+            userId = userId,
             title = request.title
         )
         val webProject = project.toWeb()
@@ -35,38 +38,42 @@ class ProjectController(
 
     @GetMapping("/{projectId}")
     fun getProject(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String
     ): GetProjectResponse {
-        val project = projectQueryUseCase.getProjectDetail(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val project = projectQueryUseCase.getProjectDetail(userId, ProjectId(projectId))
         val webProject = project.toWeb()
         return GetProjectResponse(webProject)
     }
 
     @GetMapping
     fun getAllProject(
-        @RequestParam userId: String
+        @RequestHeader("Authorization", required = false) authorization: String?
     ): GetAllProjectResponse {
-        val webProjectList = projectQueryUseCase.getAllProjects(UserId(userId)).map { it.toWeb() }
+        val userId = authenticatedUserResolver.resolve(authorization)
+        val webProjectList = projectQueryUseCase.getAllProjects(userId).map { it.toWeb() }
         return GetAllProjectResponse(webProjectList)
     }
 
     @PatchMapping("/{projectId}")
     fun updateProject(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String,
         @RequestBody request: UpdateProjectRequest
     ): UpdateProjectResponse {
-        projectManagementUseCase.renameTitle(UserId(userId), ProjectId(projectId), request.title)
-        val project = projectQueryUseCase.getProjectDetail(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        projectManagementUseCase.renameTitle(userId, ProjectId(projectId), request.title)
+        val project = projectQueryUseCase.getProjectDetail(userId, ProjectId(projectId))
         return UpdateProjectResponse(project.toWeb())
     }
 
     @DeleteMapping("/{projectId}")
     fun deleteProject(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
         @PathVariable projectId: String
     ) {
-        projectManagementUseCase.deleteProject(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization)
+        projectManagementUseCase.deleteProject(userId, ProjectId(projectId))
     }
 }

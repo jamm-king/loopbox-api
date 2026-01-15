@@ -3,12 +3,14 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jammking.loopbox.adapter.`in`.web.dto.project.CreateProjectRequest
 import com.jammking.loopbox.adapter.`in`.web.dto.project.UpdateProjectRequest
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.ProjectManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ProjectQueryUseCase
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.entity.user.UserId
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,6 +41,9 @@ class ProjectControllerTest {
     @MockitoBean
     private lateinit var errorResponseFactory: ErrorResponseFactory
 
+    @MockitoBean
+    private lateinit var authenticatedUserResolver: AuthenticatedUserResolver
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
@@ -46,14 +51,16 @@ class ProjectControllerTest {
     fun `createProject should return created project`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val title = "New Project"
         val request = CreateProjectRequest(title = title)
         val project = Project(ownerUserId = UserId(userId), title = title)
         whenever(projectManagementUseCase.createProject(UserId(userId), title)).thenReturn(project)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(post("/api/project")
-            .param("userId", userId)
+            .header("Authorization", authorization)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk)
@@ -64,13 +71,15 @@ class ProjectControllerTest {
     fun `getProject should return project detail`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val project = Project(id = ProjectId(projectId), ownerUserId = UserId(userId), title = "Test Project")
         whenever(projectQueryUseCase.getProjectDetail(UserId(userId), ProjectId(projectId))).thenReturn(project)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(get("/api/project/{projectId}", projectId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.project.id").value(projectId))
             .andExpect(jsonPath("$.project.title").value("Test Project"))
@@ -80,13 +89,15 @@ class ProjectControllerTest {
     fun `getAllProject should return list of projects`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val project1 = Project(id = ProjectId("p1"), ownerUserId = UserId(userId), title = "Project 1")
         val project2 = Project(id = ProjectId("p2"), ownerUserId = UserId("user-2"), title = "Project 2")
         whenever(projectQueryUseCase.getAllProjects(UserId(userId))).thenReturn(listOf(project1))
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(get("/api/project")
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.projectList[0].id").value("p1"))
     }
@@ -95,15 +106,17 @@ class ProjectControllerTest {
     fun `updateProject should update title`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val request = UpdateProjectRequest(title = "Updated Project")
         val project = Project(id = ProjectId(projectId), ownerUserId = UserId(userId), title = request.title)
         whenever(projectQueryUseCase.getProjectDetail(UserId(userId), ProjectId(projectId))).thenReturn(project)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(
             patch("/api/project/{projectId}", projectId)
-                .param("userId", userId)
+                .header("Authorization", authorization)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -118,11 +131,13 @@ class ProjectControllerTest {
     fun `deleteProject should call delete usecase`() {
         // Given
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         // When & Then
         mockMvc.perform(delete("/api/project/{projectId}", projectId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
 
         verify(projectManagementUseCase).deleteProject(UserId(userId), ProjectId(projectId))

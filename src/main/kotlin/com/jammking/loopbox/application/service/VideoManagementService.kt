@@ -9,7 +9,9 @@ import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.exception.image.ImageVersionNotFoundException
+import com.jammking.loopbox.domain.exception.image.ImageNotFoundException
 import com.jammking.loopbox.domain.exception.music.MusicVersionNotFoundException
+import com.jammking.loopbox.domain.exception.music.MusicNotFoundException
 import com.jammking.loopbox.domain.exception.project.InvalidProjectOwnerException
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.exception.video.InvalidVideoEditException
@@ -17,7 +19,9 @@ import com.jammking.loopbox.domain.exception.video.VideoNotFoundException
 import com.jammking.loopbox.application.port.out.VideoFileStorage
 import com.jammking.loopbox.application.port.out.VideoRenderClient
 import com.jammking.loopbox.domain.port.out.ImageVersionRepository
+import com.jammking.loopbox.domain.port.out.ImageRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
+import com.jammking.loopbox.domain.port.out.MusicRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import com.jammking.loopbox.domain.port.out.VideoRepository
 import com.jammking.loopbox.domain.port.out.AudioFileRepository
@@ -29,7 +33,9 @@ import org.springframework.stereotype.Service
 class VideoManagementService(
     private val projectRepository: ProjectRepository,
     private val videoRepository: VideoRepository,
+    private val musicRepository: MusicRepository,
     private val musicVersionRepository: MusicVersionRepository,
+    private val imageRepository: ImageRepository,
     private val imageVersionRepository: ImageVersionRepository,
     private val audioFileRepository: AudioFileRepository,
     private val imageFileRepository: ImageFileRepository,
@@ -47,6 +53,11 @@ class VideoManagementService(
         val segments = command.segments.map { input ->
             val version = musicVersionRepository.findById(input.musicVersionId)
                 ?: throw MusicVersionNotFoundException.byVersionId(input.musicVersionId)
+            val music = musicRepository.findById(version.musicId)
+                ?: throw MusicNotFoundException.byMusicId(version.musicId)
+            if (music.projectId != command.projectId) {
+                throw InvalidVideoEditException("Invalid video edit: music version does not belong to project.")
+            }
 
             VideoSegment(
                 musicVersionId = version.id,
@@ -182,6 +193,11 @@ class VideoManagementService(
 
             val version = imageVersionRepository.findById(input.imageVersionId)
                 ?: throw ImageVersionNotFoundException.byVersionId(input.imageVersionId)
+            val image = imageRepository.findById(version.imageId)
+                ?: throw ImageNotFoundException.byImageId(version.imageId)
+            if (image.projectId != command.projectId) {
+                throw InvalidVideoEditException("Invalid video edit: image version does not belong to project.")
+            }
 
             VideoImageGroup(
                 imageVersionId = version.id,
