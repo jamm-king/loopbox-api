@@ -6,10 +6,13 @@ import com.jammking.loopbox.application.port.out.ImageAiRouter
 import com.jammking.loopbox.domain.entity.image.Image
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
+import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.ImageGenerationTask
 import com.jammking.loopbox.domain.exception.image.ImageNotFoundException
 import com.jammking.loopbox.domain.exception.image.ImageVersionNotFoundException
+import com.jammking.loopbox.domain.exception.project.InvalidProjectOwnerException
 import com.jammking.loopbox.domain.exception.project.ProjectImageInconsistentStateException
 import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.port.out.ImageGenerationTaskRepository
@@ -30,9 +33,10 @@ class ImageManagementService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun createImage(projectId: ProjectId): Image {
+    override fun createImage(userId: UserId, projectId: ProjectId): Image {
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)
+        requireOwner(project, userId)
 
         val image = Image(projectId = projectId)
         val saved = imageRepository.save(image)
@@ -41,11 +45,12 @@ class ImageManagementService(
         return saved
     }
 
-    override fun deleteImage(imageId: ImageId) {
+    override fun deleteImage(userId: UserId, imageId: ImageId) {
         val image = imageRepository.findById(imageId)
             ?: throw ImageNotFoundException.byImageId(imageId)
-        projectRepository.findById(image.projectId)
+        val project = projectRepository.findById(image.projectId)
             ?: throw ProjectImageInconsistentStateException.projectMissingForImage(image.id, image.projectId)
+        requireOwner(project, userId)
 
         val tasks = taskRepository.findByImageId(image.id)
         tasks.forEach { task ->
@@ -68,6 +73,7 @@ class ImageManagementService(
 
         val project = projectRepository.findById(image.projectId)
             ?: throw ProjectImageInconsistentStateException.projectMissingForImage(image.id, image.projectId)
+        requireOwner(project, command.userId)
 
         image.startVersionGeneration(config)
         val savedImage = imageRepository.save(image)
@@ -107,9 +113,12 @@ class ImageManagementService(
         }
     }
 
-    override fun deleteVersion(imageId: ImageId, versionId: ImageVersionId): Image {
+    override fun deleteVersion(userId: UserId, imageId: ImageId, versionId: ImageVersionId): Image {
         val image = imageRepository.findById(imageId)
             ?: throw ImageNotFoundException.byImageId(imageId)
+        val project = projectRepository.findById(image.projectId)
+            ?: throw ProjectImageInconsistentStateException.projectMissingForImage(image.id, image.projectId)
+        requireOwner(project, userId)
         val version = versionRepository.findById(versionId)
             ?: throw ImageVersionNotFoundException.byVersionId(versionId)
 
@@ -131,14 +140,23 @@ class ImageManagementService(
         }
     }
 
-    override fun acknowledgeFailure(imageId: ImageId): Image {
+    override fun acknowledgeFailure(userId: UserId, imageId: ImageId): Image {
         val image = imageRepository.findById(imageId)
             ?: throw ImageNotFoundException.byImageId(imageId)
+        val project = projectRepository.findById(image.projectId)
+            ?: throw ProjectImageInconsistentStateException.projectMissingForImage(image.id, image.projectId)
+        requireOwner(project, userId)
 
         image.acknowledgeFailure()
         val saved = imageRepository.save(image)
         log.info("Acknowledged image's failure status: imageId=${imageId.value}")
 
         return saved
+    }
+
+    private fun requireOwner(project: Project, userId: UserId) {
+        if (project.ownerUserId != userId) {
+            throw InvalidProjectOwnerException(project.id, userId, project.ownerUserId)
+        }
     }
 }

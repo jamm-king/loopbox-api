@@ -5,6 +5,7 @@ import com.jammking.loopbox.adapter.`in`.web.support.AudioStreamResponder
 import com.jammking.loopbox.application.port.`in`.GetMusicVersionAudioUseCase
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
+import com.jammking.loopbox.domain.entity.user.UserId
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -39,6 +40,7 @@ class MusicVersionAudioControllerTest {
     @Test
     fun `streamAudio should return response from responder`() {
         // Given
+        val userId = "user-1"
         val musicId = "music-1"
         val versionId = "v1"
         val target = GetMusicVersionAudioUseCase.AudioStreamTarget(
@@ -51,16 +53,17 @@ class MusicVersionAudioControllerTest {
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(responseBody)
 
-        whenever(getMusicVersionAudioUseCase.getAudioTarget(MusicId(musicId), MusicVersionId(versionId)))
+        whenever(getMusicVersionAudioUseCase.getAudioTarget(UserId(userId), MusicId(musicId), MusicVersionId(versionId)))
             .thenReturn(target)
         whenever(audioStreamResponder.respond(eq(target), any()))
             .thenReturn(responseEntity)
 
         // When & Then
-        mockMvc.perform(get("/api/music/{musicId}/versions/{versionId}/audio", musicId, versionId))
+        mockMvc.perform(get("/api/music/{musicId}/versions/{versionId}/audio", musicId, versionId)
+            .param("userId", userId))
             .andExpect(status().isOk)
 
-        verify(getMusicVersionAudioUseCase).getAudioTarget(MusicId(musicId), MusicVersionId(versionId))
+        verify(getMusicVersionAudioUseCase).getAudioTarget(UserId(userId), MusicId(musicId), MusicVersionId(versionId))
         verify(audioStreamResponder).respond(eq(target), any())
     }
 }

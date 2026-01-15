@@ -4,6 +4,7 @@ import com.jammking.loopbox.adapter.`in`.web.dto.error.ErrorResponseFactory
 import com.jammking.loopbox.adapter.`in`.web.support.VideoStreamResponder
 import com.jammking.loopbox.application.port.`in`.GetVideoFileUseCase
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -37,6 +38,7 @@ class VideoFileControllerTest {
 
     @Test
     fun `streamVideo should return response from responder`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val target = GetVideoFileUseCase.VideoStreamTarget(
             path = Path.of("dummy"),
@@ -48,15 +50,16 @@ class VideoFileControllerTest {
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(responseBody)
 
-        whenever(getVideoFileUseCase.getVideoTarget(ProjectId(projectId)))
+        whenever(getVideoFileUseCase.getVideoTarget(UserId(userId), ProjectId(projectId)))
             .thenReturn(target)
         whenever(videoStreamResponder.respond(eq(target), any()))
             .thenReturn(responseEntity)
 
-        mockMvc.perform(get("/api/project/{projectId}/video/file", projectId))
+        mockMvc.perform(get("/api/project/{projectId}/video/file", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
 
-        verify(getVideoFileUseCase).getVideoTarget(ProjectId(projectId))
+        verify(getVideoFileUseCase).getVideoTarget(UserId(userId), ProjectId(projectId))
         verify(videoStreamResponder).respond(eq(target), any())
     }
 }

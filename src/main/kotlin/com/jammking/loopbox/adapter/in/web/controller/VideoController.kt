@@ -10,6 +10,7 @@ import com.jammking.loopbox.application.port.`in`.VideoQueryUseCase
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -21,18 +22,21 @@ class VideoController(
 
     @GetMapping
     fun getVideo(
+        @RequestParam userId: String,
         @PathVariable projectId: String
     ): GetVideoResponse {
-        val video = videoQueryUseCase.getVideoDetail(ProjectId(projectId))
+        val video = videoQueryUseCase.getVideoDetail(UserId(userId), ProjectId(projectId))
         return GetVideoResponse(video.toWeb())
     }
 
     @PutMapping
     fun updateVideo(
+        @RequestParam userId: String,
         @PathVariable projectId: String,
         @RequestBody request: UpdateVideoRequest
     ): UpdateVideoResponse {
         val command = VideoManagementUseCase.UpdateVideoCommand(
+            userId = UserId(userId),
             projectId = ProjectId(projectId),
             segments = request.segments.map {
                 VideoManagementUseCase.SegmentInput(
@@ -53,9 +57,10 @@ class VideoController(
 
     @PostMapping("/render")
     fun renderVideo(
+        @RequestParam userId: String,
         @PathVariable projectId: String
     ): RenderVideoResponse {
-        val video = videoManagementUseCase.requestRender(ProjectId(projectId))
+        val video = videoManagementUseCase.requestRender(UserId(userId), ProjectId(projectId))
         return RenderVideoResponse(video.toWeb())
     }
 }

@@ -16,6 +16,7 @@ import com.jammking.loopbox.domain.entity.task.ExternalId
 import com.jammking.loopbox.domain.entity.task.ImageAiProvider
 import com.jammking.loopbox.domain.entity.task.ImageGenerationTask
 import com.jammking.loopbox.domain.entity.task.ImageGenerationTaskStatus
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.port.out.ImageGenerationTaskRepository
 import com.jammking.loopbox.domain.port.out.ImageRepository
 import com.jammking.loopbox.domain.port.out.ImageVersionRepository
@@ -63,14 +64,15 @@ class ImageManagementServiceTest {
     @Test
     fun `createImage should save and return image`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         whenever(projectRepository.findById(projectId)).thenReturn(
-            Project(id = projectId, title = "Project")
+            Project(id = projectId, ownerUserId = userId, title = "Project")
         )
         whenever(imageRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        val result = imageManagementService.createImage(projectId)
+        val result = imageManagementService.createImage(userId, projectId)
 
         // Then
         assertEquals(projectId, result.projectId)
@@ -80,6 +82,7 @@ class ImageManagementServiceTest {
     @Test
     fun `deleteImage should delete image and related tasks`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val image = Image(id = ImageId("image-1"), projectId = projectId)
         val task = ImageGenerationTask(
@@ -89,12 +92,12 @@ class ImageManagementServiceTest {
             provider = ImageAiProvider.REPLICATE_GOOGLE_IMAGEN_4
         )
         whenever(imageRepository.findById(image.id)).thenReturn(image)
-        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, title = "Project"))
+        whenever(projectRepository.findById(projectId)).thenReturn(Project(id = projectId, ownerUserId = userId, title = "Project"))
         whenever(taskRepository.findByImageId(image.id)).thenReturn(listOf(task))
         whenever(taskRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        imageManagementService.deleteImage(image.id)
+        imageManagementService.deleteImage(userId, image.id)
 
         // Then
         verify(imageRepository).deleteById(image.id)
@@ -107,10 +110,12 @@ class ImageManagementServiceTest {
     @Test
     fun `generateVersion should request ai and save task`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val image = Image(projectId = projectId, status = ImageStatus.IDLE)
-        val project = Project(id = projectId, title = "Project")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         val command = ImageManagementUseCase.GenerateVersionCommand(
+            userId = userId,
             imageId = image.id,
             config = ImageConfig(description = "Sunrise"),
             provider = ImageAiProvider.REPLICATE_GOOGLE_IMAGEN_4
@@ -136,10 +141,12 @@ class ImageManagementServiceTest {
     @Test
     fun `generateVersion should mark failure and rethrow when ai fails`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val image = Image(projectId = projectId, status = ImageStatus.IDLE)
-        val project = Project(id = projectId, title = "Project")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         val command = ImageManagementUseCase.GenerateVersionCommand(
+            userId = userId,
             imageId = image.id,
             config = ImageConfig(description = "Sunrise"),
             provider = ImageAiProvider.REPLICATE_GOOGLE_IMAGEN_4
@@ -163,19 +170,22 @@ class ImageManagementServiceTest {
     @Test
     fun `deleteVersion should delete version and reset status`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val image = Image(projectId = projectId, status = ImageStatus.IDLE)
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         val version = ImageVersion(
             id = ImageVersionId("version-1"),
             imageId = image.id,
             config = ImageConfig()
         )
         whenever(imageRepository.findById(image.id)).thenReturn(image)
+        whenever(projectRepository.findById(image.projectId)).thenReturn(project)
         whenever(versionRepository.findById(version.id)).thenReturn(version)
         whenever(imageRepository.save(image)).thenReturn(image)
 
         // When
-        val result = imageManagementService.deleteVersion(image.id, version.id)
+        val result = imageManagementService.deleteVersion(userId, image.id, version.id)
 
         // Then
         assertEquals(ImageStatus.IDLE, result.status)
@@ -185,17 +195,20 @@ class ImageManagementServiceTest {
     @Test
     fun `acknowledgeFailure should reset status`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val image = Image(
             projectId = projectId,
             status = ImageStatus.FAILED,
             lastOperation = ImageOperation.GENERATE_VERSION
         )
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         whenever(imageRepository.findById(image.id)).thenReturn(image)
+        whenever(projectRepository.findById(image.projectId)).thenReturn(project)
         whenever(imageRepository.save(image)).thenReturn(image)
 
         // When
-        val result = imageManagementService.acknowledgeFailure(image.id)
+        val result = imageManagementService.acknowledgeFailure(userId, image.id)
 
         // Then
         assertEquals(ImageStatus.IDLE, result.status)

@@ -2,11 +2,13 @@ package com.jammking.loopbox.domain.entity.project
 
 import com.jammking.loopbox.domain.exception.project.InvalidProjectStateException
 import com.jammking.loopbox.domain.exception.project.InvalidProjectTitleException
+import com.jammking.loopbox.domain.entity.user.UserId
 import java.time.Instant
 import java.util.*
 
 class Project(
     val id: ProjectId = ProjectId(UUID.randomUUID().toString()),
+    val ownerUserId: UserId,
     title: String,
     status: ProjectStatus = ProjectStatus.DRAFT,
     val createdAt: Instant = Instant.now(),
@@ -47,12 +49,14 @@ class Project(
 
     fun copy(
         id: ProjectId = this.id,
+        ownerUserId: UserId = this.ownerUserId,
         title: String = this.title,
         status: ProjectStatus = this.status,
         createdAt: Instant = this.createdAt,
         updatedAt: Instant = this.updatedAt
     ): Project = Project(
         id = id,
+        ownerUserId = ownerUserId,
         title = title,
         status = status,
         createdAt = createdAt,

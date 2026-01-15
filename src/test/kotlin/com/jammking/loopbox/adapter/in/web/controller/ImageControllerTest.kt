@@ -11,6 +11,7 @@ import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersion
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.ImageAiProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -49,11 +50,13 @@ class ImageControllerTest {
 
     @Test
     fun `createImage should return created image`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val image = Image(id = ImageId("image-1"), projectId = ProjectId(projectId))
-        whenever(imageManagementUseCase.createImage(ProjectId(projectId))).thenReturn(image)
+        whenever(imageManagementUseCase.createImage(UserId(userId), ProjectId(projectId))).thenReturn(image)
 
-        mockMvc.perform(post("/api/project/{projectId}/image/create", projectId))
+        mockMvc.perform(post("/api/project/{projectId}/image/create", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value("image-1"))
             .andExpect(jsonPath("$.image.status").value("IDLE"))
@@ -61,6 +64,7 @@ class ImageControllerTest {
 
     @Test
     fun `getImage should return image detail`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val imageId = "image-1"
         val image = Image(id = ImageId(imageId), projectId = ProjectId(projectId))
@@ -75,9 +79,10 @@ class ImageControllerTest {
             versions = listOf(version),
             versionUrls = mapOf(version.id to "http://localhost/static/image/v1.png")
         )
-        whenever(imageQueryUseCase.getImageDetail(ImageId(imageId))).thenReturn(result)
+        whenever(imageQueryUseCase.getImageDetail(UserId(userId), ImageId(imageId))).thenReturn(result)
 
-        mockMvc.perform(get("/api/project/{projectId}/image/{imageId}", projectId, imageId))
+        mockMvc.perform(get("/api/project/{projectId}/image/{imageId}", projectId, imageId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value(imageId))
             .andExpect(jsonPath("$.versions[0].id").value("v1"))
@@ -88,12 +93,14 @@ class ImageControllerTest {
 
     @Test
     fun `getImageList should return list of images`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val image1 = Image(id = ImageId("i1"), projectId = ProjectId(projectId))
         val image2 = Image(id = ImageId("i2"), projectId = ProjectId(projectId))
-        whenever(imageQueryUseCase.getImageListForProject(ProjectId(projectId))).thenReturn(listOf(image1, image2))
+        whenever(imageQueryUseCase.getImageListForProject(UserId(userId), ProjectId(projectId))).thenReturn(listOf(image1, image2))
 
-        mockMvc.perform(get("/api/project/{projectId}/image", projectId))
+        mockMvc.perform(get("/api/project/{projectId}/image", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.images[0].id").value("i1"))
             .andExpect(jsonPath("$.images[1].id").value("i2"))
@@ -101,17 +108,20 @@ class ImageControllerTest {
 
     @Test
     fun `deleteImage should call delete usecase`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val imageId = "image-1"
 
-        mockMvc.perform(delete("/api/project/{projectId}/image/{imageId}", projectId, imageId))
+        mockMvc.perform(delete("/api/project/{projectId}/image/{imageId}", projectId, imageId)
+            .param("userId", userId))
             .andExpect(status().isOk)
 
-        verify(imageManagementUseCase).deleteImage(ImageId(imageId))
+        verify(imageManagementUseCase).deleteImage(UserId(userId), ImageId(imageId))
     }
 
     @Test
     fun `generateVersion should call usecase and return image`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val imageId = "image-1"
         val request = GenerateImageVersionRequest(
@@ -125,6 +135,7 @@ class ImageControllerTest {
 
         mockMvc.perform(
             post("/api/project/{projectId}/image/{imageId}/version/generate", projectId, imageId)
+                .param("userId", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -134,6 +145,7 @@ class ImageControllerTest {
         val captor = argumentCaptor<ImageManagementUseCase.GenerateVersionCommand>()
         verify(imageManagementUseCase).generateVersion(captor.capture())
         val command = captor.firstValue
+        assertEquals(UserId(userId), command.userId)
         assertEquals(ImageAiProvider.REPLICATE_GOOGLE_IMAGEN_4, command.provider)
         assertEquals("Sunset", command.config.description)
         assertEquals(1600, command.config.width)
@@ -141,19 +153,21 @@ class ImageControllerTest {
 
     @Test
     fun `deleteVersion should call delete usecase`() {
+        val userId = "user-1"
         val projectId = "project-1"
         val imageId = "image-1"
         val versionId = "v1"
         val image = Image(id = ImageId(imageId), projectId = ProjectId(projectId))
-        whenever(imageManagementUseCase.deleteVersion(ImageId(imageId), ImageVersionId(versionId)))
+        whenever(imageManagementUseCase.deleteVersion(UserId(userId), ImageId(imageId), ImageVersionId(versionId)))
             .thenReturn(image)
 
         mockMvc.perform(
             delete("/api/project/{projectId}/image/{imageId}/version/{versionId}", projectId, imageId, versionId)
+                .param("userId", userId)
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value(imageId))
 
-        verify(imageManagementUseCase).deleteVersion(ImageId(imageId), ImageVersionId(versionId))
+        verify(imageManagementUseCase).deleteVersion(UserId(userId), ImageId(imageId), ImageVersionId(versionId))
     }
 }

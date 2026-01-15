@@ -14,6 +14,7 @@ import com.jammking.loopbox.domain.entity.music.MusicVersionStatus
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.entity.project.ProjectStatus
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.ExternalId
 import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
@@ -94,7 +95,7 @@ class HandleMusicGenerationCallbackServiceTest {
             status = MusicStatus.GENERATING,
             requestedConfig = config
         )
-        val project = Project(id = projectId, title = "Project", status = ProjectStatus.DRAFT)
+        val project = Project(id = projectId, ownerUserId = UserId("user-1"), title = "Project", status = ProjectStatus.DRAFT)
 
         whenever(taskRepository.findByProviderAndExternalId(provider, externalId)).thenReturn(task)
         whenever(musicRepository.findById(musicId)).thenReturn(music)
@@ -145,7 +146,7 @@ class HandleMusicGenerationCallbackServiceTest {
             status = MusicStatus.GENERATING,
             requestedConfig = config
         )
-        val project = Project(id = projectId, title = "Project")
+        val project = Project(id = projectId, ownerUserId = UserId("user-1"), title = "Project")
 
         whenever(taskRepository.findByProviderAndExternalId(provider, externalId)).thenReturn(task)
         whenever(musicRepository.findById(musicId)).thenReturn(music)

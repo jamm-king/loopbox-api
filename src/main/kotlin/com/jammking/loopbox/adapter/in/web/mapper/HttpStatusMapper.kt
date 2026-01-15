@@ -31,6 +31,7 @@ object HttpStatusMapper {
         ErrorCode.DUPLICATE_MUSIC_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_VERSION_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_USER_EMAIL -> HttpStatus.CONFLICT
+        ErrorCode.INVALID_PROJECT_OWNER -> HttpStatus.FORBIDDEN
 
         ErrorCode.INVALID_PROJECT_TITLE -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_MUSIC_AI_PROVIDER -> HttpStatus.BAD_REQUEST

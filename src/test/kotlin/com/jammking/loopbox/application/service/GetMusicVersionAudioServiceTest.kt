@@ -9,11 +9,16 @@ import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersion
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.music.MusicVersionStatus
+import com.jammking.loopbox.domain.entity.project.Project
+import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.exception.file.AudioFileNotFoundException
 import com.jammking.loopbox.domain.exception.music.InvalidMusicVersionStateException
 import com.jammking.loopbox.domain.exception.music.MusicVersionNotFoundException
 import com.jammking.loopbox.domain.port.out.AudioFileRepository
+import com.jammking.loopbox.domain.port.out.MusicRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
+import com.jammking.loopbox.domain.port.out.ProjectRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -36,13 +41,23 @@ class GetMusicVersionAudioServiceTest {
     @Mock
     private lateinit var resolveLocalAudioPort: ResolveLocalAudioPort
 
+    @Mock
+    private lateinit var musicRepository: MusicRepository
+
+    @Mock
+    private lateinit var projectRepository: ProjectRepository
+
     @InjectMocks
     private lateinit var getMusicVersionAudioService: GetMusicVersionAudioService
 
     @Test
     fun `getAudioTarget should return audio stream target`() {
         // Given
+        val userId = UserId("user-1")
         val musicId = MusicId("music-1")
+        val projectId = ProjectId("project-1")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
+        val music = com.jammking.loopbox.domain.entity.music.Music(id = musicId, projectId = projectId)
         val versionId = MusicVersionId("version-1")
         val fileId = AudioFileId("file-1")
         val version = MusicVersion(
@@ -59,11 +74,13 @@ class GetMusicVersionAudioServiceTest {
             contentLength = 123L
         )
         `when`(versionRepository.findById(versionId)).thenReturn(version)
+        `when`(musicRepository.findById(musicId)).thenReturn(music)
+        `when`(projectRepository.findById(projectId)).thenReturn(project)
         `when`(fileRepository.findById(fileId)).thenReturn(audioFile)
         `when`(resolveLocalAudioPort.resolve(audioFile.path)).thenReturn(target)
 
         // When
-        val result = getMusicVersionAudioService.getAudioTarget(musicId, versionId)
+        val result = getMusicVersionAudioService.getAudioTarget(userId, musicId, versionId)
 
         // Then
         assertEquals(target, result)
@@ -72,18 +89,20 @@ class GetMusicVersionAudioServiceTest {
     @Test
     fun `getAudioTarget should throw when version not found`() {
         // Given
+        val userId = UserId("user-1")
         val versionId = MusicVersionId("missing-version")
         `when`(versionRepository.findById(versionId)).thenReturn(null)
 
         // When & Then
         assertThrows(MusicVersionNotFoundException::class.java) {
-            getMusicVersionAudioService.getAudioTarget(MusicId("music-1"), versionId)
+            getMusicVersionAudioService.getAudioTarget(userId, MusicId("music-1"), versionId)
         }
     }
 
     @Test
     fun `getAudioTarget should throw when music id mismatched`() {
         // Given
+        val userId = UserId("user-1")
         val requestedMusicId = MusicId("music-1")
         val versionId = MusicVersionId("version-1")
         val version = MusicVersion(
@@ -97,14 +116,18 @@ class GetMusicVersionAudioServiceTest {
 
         // When & Then
         assertThrows(MusicVersionNotFoundException::class.java) {
-            getMusicVersionAudioService.getAudioTarget(requestedMusicId, versionId)
+            getMusicVersionAudioService.getAudioTarget(userId, requestedMusicId, versionId)
         }
     }
 
     @Test
     fun `getAudioTarget should throw when version not ready`() {
         // Given
+        val userId = UserId("user-1")
         val musicId = MusicId("music-1")
+        val projectId = ProjectId("project-1")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
+        val music = com.jammking.loopbox.domain.entity.music.Music(id = musicId, projectId = projectId)
         val versionId = MusicVersionId("version-1")
         val version = MusicVersion(
             id = versionId,
@@ -113,17 +136,23 @@ class GetMusicVersionAudioServiceTest {
             config = MusicConfig()
         )
         `when`(versionRepository.findById(versionId)).thenReturn(version)
+        `when`(musicRepository.findById(musicId)).thenReturn(music)
+        `when`(projectRepository.findById(projectId)).thenReturn(project)
 
         // When & Then
         assertThrows(InvalidMusicVersionStateException::class.java) {
-            getMusicVersionAudioService.getAudioTarget(musicId, versionId)
+            getMusicVersionAudioService.getAudioTarget(userId, musicId, versionId)
         }
     }
 
     @Test
     fun `getAudioTarget should throw when file missing`() {
         // Given
+        val userId = UserId("user-1")
         val musicId = MusicId("music-1")
+        val projectId = ProjectId("project-1")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
+        val music = com.jammking.loopbox.domain.entity.music.Music(id = musicId, projectId = projectId)
         val versionId = MusicVersionId("version-1")
         val fileId = AudioFileId("file-1")
         val version = MusicVersion(
@@ -134,11 +163,13 @@ class GetMusicVersionAudioServiceTest {
             fileId = fileId
         )
         `when`(versionRepository.findById(versionId)).thenReturn(version)
+        `when`(musicRepository.findById(musicId)).thenReturn(music)
+        `when`(projectRepository.findById(projectId)).thenReturn(project)
         `when`(fileRepository.findById(fileId)).thenReturn(null)
 
         // When & Then
         assertThrows(AudioFileNotFoundException::class.java) {
-            getMusicVersionAudioService.getAudioTarget(musicId, versionId)
+            getMusicVersionAudioService.getAudioTarget(userId, musicId, versionId)
         }
     }
 }

@@ -5,6 +5,7 @@ import com.jammking.loopbox.domain.entity.file.VideoFile
 import com.jammking.loopbox.domain.entity.file.VideoFileId
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.video.Video
 import com.jammking.loopbox.domain.entity.video.VideoStatus
 import com.jammking.loopbox.domain.port.out.ProjectRepository
@@ -37,7 +38,7 @@ class HandleVideoRenderCallbackServiceTest {
     @Test
     fun `handle should complete render`() {
         val projectId = ProjectId("project-1")
-        val project = Project(id = projectId, title = "Project")
+        val project = Project(id = projectId, ownerUserId = UserId("user-1"), title = "Project")
         val video = Video(projectId = projectId)
         val savedFile = VideoFile(id = VideoFileId("file-1"), path = "video.mp4")
         video.startRender()

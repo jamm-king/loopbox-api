@@ -31,6 +31,7 @@ enum class ErrorCode {
     DUPLICATE_MUSIC_ID,
     DUPLICATE_VERSION_ID,
     DUPLICATE_USER_EMAIL,
+    INVALID_PROJECT_OWNER,
 
     // --- Validation ---
     INVALID_PROJECT_TITLE,

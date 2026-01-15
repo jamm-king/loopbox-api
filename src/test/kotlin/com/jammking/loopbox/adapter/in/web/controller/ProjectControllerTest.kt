@@ -7,6 +7,7 @@ import com.jammking.loopbox.application.port.`in`.ProjectManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ProjectQueryUseCase
 import com.jammking.loopbox.domain.entity.project.Project
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -44,13 +45,15 @@ class ProjectControllerTest {
     @Test
     fun `createProject should return created project`() {
         // Given
+        val userId = "user-1"
         val title = "New Project"
         val request = CreateProjectRequest(title = title)
-        val project = Project(title = title)
-        whenever(projectManagementUseCase.createProject(title)).thenReturn(project)
+        val project = Project(ownerUserId = UserId(userId), title = title)
+        whenever(projectManagementUseCase.createProject(UserId(userId), title)).thenReturn(project)
 
         // When & Then
         mockMvc.perform(post("/api/project")
+            .param("userId", userId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk)
@@ -60,12 +63,14 @@ class ProjectControllerTest {
     @Test
     fun `getProject should return project detail`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
-        val project = Project(id = ProjectId(projectId), title = "Test Project")
-        whenever(projectQueryUseCase.getProjectDetail(ProjectId(projectId))).thenReturn(project)
+        val project = Project(id = ProjectId(projectId), ownerUserId = UserId(userId), title = "Test Project")
+        whenever(projectQueryUseCase.getProjectDetail(UserId(userId), ProjectId(projectId))).thenReturn(project)
 
         // When & Then
-        mockMvc.perform(get("/api/project/{projectId}", projectId))
+        mockMvc.perform(get("/api/project/{projectId}", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.project.id").value(projectId))
             .andExpect(jsonPath("$.project.title").value("Test Project"))
@@ -74,28 +79,31 @@ class ProjectControllerTest {
     @Test
     fun `getAllProject should return list of projects`() {
         // Given
-        val project1 = Project(id = ProjectId("p1"), title = "Project 1")
-        val project2 = Project(id = ProjectId("p2"), title = "Project 2")
-        whenever(projectQueryUseCase.getAllProjects()).thenReturn(listOf(project1, project2))
+        val userId = "user-1"
+        val project1 = Project(id = ProjectId("p1"), ownerUserId = UserId(userId), title = "Project 1")
+        val project2 = Project(id = ProjectId("p2"), ownerUserId = UserId("user-2"), title = "Project 2")
+        whenever(projectQueryUseCase.getAllProjects(UserId(userId))).thenReturn(listOf(project1))
 
         // When & Then
-        mockMvc.perform(get("/api/project"))
+        mockMvc.perform(get("/api/project")
+            .param("userId", userId))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.projectList[0].id").value("p1"))
-            .andExpect(jsonPath("$.projectList[1].id").value("p2"))
     }
 
     @Test
     fun `updateProject should update title`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
         val request = UpdateProjectRequest(title = "Updated Project")
-        val project = Project(id = ProjectId(projectId), title = request.title)
-        whenever(projectQueryUseCase.getProjectDetail(ProjectId(projectId))).thenReturn(project)
+        val project = Project(id = ProjectId(projectId), ownerUserId = UserId(userId), title = request.title)
+        whenever(projectQueryUseCase.getProjectDetail(UserId(userId), ProjectId(projectId))).thenReturn(project)
 
         // When & Then
         mockMvc.perform(
             patch("/api/project/{projectId}", projectId)
+                .param("userId", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -103,18 +111,20 @@ class ProjectControllerTest {
             .andExpect(jsonPath("$.project.id").value(projectId))
             .andExpect(jsonPath("$.project.title").value("Updated Project"))
 
-        verify(projectManagementUseCase).renameTitle(ProjectId(projectId), request.title)
+        verify(projectManagementUseCase).renameTitle(UserId(userId), ProjectId(projectId), request.title)
     }
 
     @Test
     fun `deleteProject should call delete usecase`() {
         // Given
+        val userId = "user-1"
         val projectId = "project-1"
 
         // When & Then
-        mockMvc.perform(delete("/api/project/{projectId}", projectId))
+        mockMvc.perform(delete("/api/project/{projectId}", projectId)
+            .param("userId", userId))
             .andExpect(status().isOk)
 
-        verify(projectManagementUseCase).deleteProject(ProjectId(projectId))
+        verify(projectManagementUseCase).deleteProject(UserId(userId), ProjectId(projectId))
     }
 }

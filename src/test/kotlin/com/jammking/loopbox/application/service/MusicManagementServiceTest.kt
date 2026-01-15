@@ -17,6 +17,7 @@ import com.jammking.loopbox.domain.entity.task.ExternalId
 import com.jammking.loopbox.domain.entity.task.MusicAiProvider
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskStatus
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
 import com.jammking.loopbox.domain.port.out.MusicRepository
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
@@ -64,15 +65,16 @@ class MusicManagementServiceTest {
     @Test
     fun `createMusic should save and return music`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val alias = "My Song"
         whenever(projectRepository.findById(projectId)).thenReturn(
-            Project(id = projectId, title = "Project")
+            Project(id = projectId, ownerUserId = userId, title = "Project")
         )
         whenever(musicRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        val result = musicManagementService.createMusic(projectId, alias)
+        val result = musicManagementService.createMusic(userId, projectId, alias)
 
         // Then
         assertEquals(projectId, result.projectId)
@@ -83,10 +85,14 @@ class MusicManagementServiceTest {
     @Test
     fun `updateMusic should update alias`() {
         // Given
+        val userId = UserId("user-1")
         val music = Music(projectId = ProjectId("project-1"), alias = "Old")
+        val project = Project(id = music.projectId, ownerUserId = userId, title = "Project")
         whenever(musicRepository.findById(music.id)).thenReturn(music)
+        whenever(projectRepository.findById(music.projectId)).thenReturn(project)
         whenever(musicRepository.save(music)).thenReturn(music)
         val command = MusicManagementUseCase.UpdateMusicCommand(
+            userId = userId,
             musicId = music.id,
             alias = "New"
         )
@@ -102,8 +108,9 @@ class MusicManagementServiceTest {
     @Test
     fun `deleteMusic should delete music and mark project draft when empty`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
-        val project = Project(id = projectId, title = "Project", status = ProjectStatus.MUSIC_READY)
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project", status = ProjectStatus.MUSIC_READY)
         val music = Music(id = MusicId("music-1"), projectId = projectId)
         val task = MusicGenerationTask(
             musicId = music.id,
@@ -119,7 +126,7 @@ class MusicManagementServiceTest {
         whenever(projectRepository.save(any())).thenAnswer { it.arguments[0] }
 
         // When
-        musicManagementService.deleteMusic(music.id)
+        musicManagementService.deleteMusic(userId, music.id)
 
         // Then
         verify(musicRepository).deleteById(music.id)
@@ -134,10 +141,12 @@ class MusicManagementServiceTest {
     @Test
     fun `generateVersion should request ai and save task`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val music = Music(projectId = projectId, status = MusicStatus.IDLE)
-        val project = Project(id = projectId, title = "Project")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         val command = MusicManagementUseCase.GenerateVersionCommand(
+            userId = userId,
             musicId = music.id,
             config = MusicConfig(mood = "chill"),
             provider = MusicAiProvider.SUNO
@@ -163,10 +172,12 @@ class MusicManagementServiceTest {
     @Test
     fun `generateVersion should mark failure and rethrow when ai fails`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val music = Music(projectId = projectId, status = MusicStatus.IDLE)
-        val project = Project(id = projectId, title = "Project")
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         val command = MusicManagementUseCase.GenerateVersionCommand(
+            userId = userId,
             musicId = music.id,
             config = MusicConfig(mood = "chill"),
             provider = MusicAiProvider.SUNO
@@ -190,19 +201,22 @@ class MusicManagementServiceTest {
     @Test
     fun `deleteVersion should delete version and reset status`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val music = Music(projectId = projectId, status = MusicStatus.IDLE)
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         val version = MusicVersion(
             id = MusicVersionId("version-1"),
             musicId = music.id,
             config = MusicConfig()
         )
         whenever(musicRepository.findById(music.id)).thenReturn(music)
+        whenever(projectRepository.findById(music.projectId)).thenReturn(project)
         whenever(versionRepository.findById(version.id)).thenReturn(version)
         whenever(musicRepository.save(music)).thenReturn(music)
 
         // When
-        val result = musicManagementService.deleteVersion(music.id, version.id)
+        val result = musicManagementService.deleteVersion(userId, music.id, version.id)
 
         // Then
         assertEquals(MusicStatus.IDLE, result.status)
@@ -212,17 +226,20 @@ class MusicManagementServiceTest {
     @Test
     fun `acknowledgeFailure should reset status`() {
         // Given
+        val userId = UserId("user-1")
         val projectId = ProjectId("project-1")
         val music = Music(
             projectId = projectId,
             status = MusicStatus.FAILED,
             lastOperation = MusicOperation.GENERATE_VERSION
         )
+        val project = Project(id = projectId, ownerUserId = userId, title = "Project")
         whenever(musicRepository.findById(music.id)).thenReturn(music)
+        whenever(projectRepository.findById(music.projectId)).thenReturn(project)
         whenever(musicRepository.save(music)).thenReturn(music)
 
         // When
-        val result = musicManagementService.acknowledgeFailure(music.id)
+        val result = musicManagementService.acknowledgeFailure(userId, music.id)
 
         // Then
         assertEquals(MusicStatus.IDLE, result.status)
