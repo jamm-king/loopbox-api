@@ -30,6 +30,7 @@ object HttpStatusMapper {
         ErrorCode.DUPLICATE_PROJECT_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_MUSIC_ID -> HttpStatus.CONFLICT
         ErrorCode.DUPLICATE_VERSION_ID -> HttpStatus.CONFLICT
+        ErrorCode.DUPLICATE_USER_EMAIL -> HttpStatus.CONFLICT
 
         ErrorCode.INVALID_PROJECT_TITLE -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_MUSIC_AI_PROVIDER -> HttpStatus.BAD_REQUEST
@@ -38,6 +39,9 @@ object HttpStatusMapper {
         ErrorCode.INVALID_IMAGE_FILE_PATH -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_VIDEO_FILE_PATH -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_VIDEO_EDIT -> HttpStatus.BAD_REQUEST
+        ErrorCode.INVALID_USER_EMAIL -> HttpStatus.BAD_REQUEST
+        ErrorCode.INVALID_USER_PASSWORD -> HttpStatus.BAD_REQUEST
+        ErrorCode.INVALID_CREDENTIALS -> HttpStatus.UNAUTHORIZED
 
         ErrorCode.INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
     }
