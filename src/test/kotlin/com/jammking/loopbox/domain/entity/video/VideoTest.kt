@@ -3,6 +3,7 @@ package com.jammking.loopbox.domain.entity.video
 import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.file.VideoFileId
 import com.jammking.loopbox.domain.exception.video.InvalidVideoStateException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -63,7 +64,7 @@ class VideoTest {
 
         // When & Then
         assertThrows(InvalidVideoStateException::class.java) {
-            video.completeRender()
+            video.completeRender(VideoFileId("file-1"))
         }
     }
 }

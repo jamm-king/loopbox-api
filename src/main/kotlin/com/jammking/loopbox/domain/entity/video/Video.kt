@@ -1,6 +1,7 @@
 package com.jammking.loopbox.domain.entity.video
 
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.file.VideoFileId
 import com.jammking.loopbox.domain.exception.video.InvalidVideoStateException
 import java.time.Instant
 import java.util.UUID
@@ -11,6 +12,7 @@ class Video(
     segments: List<VideoSegment> = emptyList(),
     imageGroups: List<VideoImageGroup> = emptyList(),
     status: VideoStatus = VideoStatus.DRAFT,
+    fileId: VideoFileId? = null,
     val createdAt: Instant = Instant.now(),
     updatedAt: Instant = Instant.now()
 ) {
@@ -24,6 +26,9 @@ class Video(
     var status: VideoStatus = status
         private set
 
+    var fileId: VideoFileId? = fileId
+        private set
+
     var updatedAt: Instant = updatedAt
         private set
 
@@ -35,6 +40,7 @@ class Video(
         this.segments = segments
         this.imageGroups = imageGroups
         this.status = VideoStatus.DRAFT
+        this.fileId = null
         this.updatedAt = now
     }
 
@@ -44,15 +50,17 @@ class Video(
         }
 
         this.status = VideoStatus.RENDERING
+        this.fileId = null
         this.updatedAt = now
     }
 
-    fun completeRender(now: Instant = Instant.now()) {
+    fun completeRender(fileId: VideoFileId, now: Instant = Instant.now()) {
         if (status != VideoStatus.RENDERING) {
             throw InvalidVideoStateException(this, "complete render")
         }
 
         this.status = VideoStatus.READY
+        this.fileId = fileId
         this.updatedAt = now
     }
 
@@ -74,6 +82,7 @@ class Video(
         segments: List<VideoSegment> = this.segments,
         imageGroups: List<VideoImageGroup> = this.imageGroups,
         status: VideoStatus = this.status,
+        fileId: VideoFileId? = this.fileId,
         createdAt: Instant = this.createdAt,
         updatedAt: Instant = this.updatedAt
     ): Video = Video(
@@ -82,6 +91,7 @@ class Video(
         segments = segments.map { it.copy() },
         imageGroups = imageGroups.map { it.copy() },
         status = status,
+        fileId = fileId,
         createdAt = createdAt,
         updatedAt = updatedAt
     )

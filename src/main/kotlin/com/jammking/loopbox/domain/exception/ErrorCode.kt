@@ -37,6 +37,7 @@ enum class ErrorCode {
     INVALID_IMAGE_AI_PROVIDER,
     INVALID_AUDIO_FILE_PATH,
     INVALID_IMAGE_FILE_PATH,
+    INVALID_VIDEO_FILE_PATH,
     INVALID_VIDEO_EDIT,
 
     // --- Fallback ---

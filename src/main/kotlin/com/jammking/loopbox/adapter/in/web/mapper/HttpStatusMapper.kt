@@ -36,6 +36,7 @@ object HttpStatusMapper {
         ErrorCode.INVALID_AUDIO_FILE_PATH -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_IMAGE_AI_PROVIDER -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_IMAGE_FILE_PATH -> HttpStatus.BAD_REQUEST
+        ErrorCode.INVALID_VIDEO_FILE_PATH -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_VIDEO_EDIT -> HttpStatus.BAD_REQUEST
 
         ErrorCode.INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
