@@ -3,6 +3,7 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jammking.loopbox.adapter.`in`.web.dto.error.ErrorResponseFactory
 import com.jammking.loopbox.adapter.`in`.web.dto.image.GenerateImageVersionRequest
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.ImageManagementUseCase
 import com.jammking.loopbox.application.port.`in`.ImageQueryUseCase
 import com.jammking.loopbox.domain.entity.image.Image
@@ -16,6 +17,7 @@ import com.jammking.loopbox.domain.entity.task.ImageAiProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -45,18 +47,23 @@ class ImageControllerTest {
     @MockitoBean
     private lateinit var errorResponseFactory: ErrorResponseFactory
 
+    @MockitoBean
+    private lateinit var authenticatedUserResolver: AuthenticatedUserResolver
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
     @Test
     fun `createImage should return created image`() {
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val image = Image(id = ImageId("image-1"), projectId = ProjectId(projectId))
         whenever(imageManagementUseCase.createImage(UserId(userId), ProjectId(projectId))).thenReturn(image)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(post("/api/project/{projectId}/image/create", projectId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value("image-1"))
             .andExpect(jsonPath("$.image.status").value("IDLE"))
@@ -65,6 +72,7 @@ class ImageControllerTest {
     @Test
     fun `getImage should return image detail`() {
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val imageId = "image-1"
         val image = Image(id = ImageId(imageId), projectId = ProjectId(projectId))
@@ -80,9 +88,10 @@ class ImageControllerTest {
             versionUrls = mapOf(version.id to "http://localhost/static/image/v1.png")
         )
         whenever(imageQueryUseCase.getImageDetail(UserId(userId), ImageId(imageId))).thenReturn(result)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(get("/api/project/{projectId}/image/{imageId}", projectId, imageId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value(imageId))
             .andExpect(jsonPath("$.versions[0].id").value("v1"))
@@ -94,13 +103,15 @@ class ImageControllerTest {
     @Test
     fun `getImageList should return list of images`() {
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val image1 = Image(id = ImageId("i1"), projectId = ProjectId(projectId))
         val image2 = Image(id = ImageId("i2"), projectId = ProjectId(projectId))
         whenever(imageQueryUseCase.getImageListForProject(UserId(userId), ProjectId(projectId))).thenReturn(listOf(image1, image2))
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(get("/api/project/{projectId}/image", projectId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.images[0].id").value("i1"))
             .andExpect(jsonPath("$.images[1].id").value("i2"))
@@ -109,11 +120,13 @@ class ImageControllerTest {
     @Test
     fun `deleteImage should call delete usecase`() {
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val imageId = "image-1"
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(delete("/api/project/{projectId}/image/{imageId}", projectId, imageId)
-            .param("userId", userId))
+            .header("Authorization", authorization))
             .andExpect(status().isOk)
 
         verify(imageManagementUseCase).deleteImage(UserId(userId), ImageId(imageId))
@@ -122,6 +135,7 @@ class ImageControllerTest {
     @Test
     fun `generateVersion should call usecase and return image`() {
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val imageId = "image-1"
         val request = GenerateImageVersionRequest(
@@ -132,10 +146,11 @@ class ImageControllerTest {
         )
         val image = Image(id = ImageId(imageId), projectId = ProjectId(projectId))
         whenever(imageManagementUseCase.generateVersion(any())).thenReturn(image)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(
             post("/api/project/{projectId}/image/{imageId}/version/generate", projectId, imageId)
-                .param("userId", userId)
+                .header("Authorization", authorization)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -154,16 +169,18 @@ class ImageControllerTest {
     @Test
     fun `deleteVersion should call delete usecase`() {
         val userId = "user-1"
+        val authorization = "Bearer token"
         val projectId = "project-1"
         val imageId = "image-1"
         val versionId = "v1"
         val image = Image(id = ImageId(imageId), projectId = ProjectId(projectId))
         whenever(imageManagementUseCase.deleteVersion(UserId(userId), ImageId(imageId), ImageVersionId(versionId)))
             .thenReturn(image)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(
             delete("/api/project/{projectId}/image/{imageId}/version/{versionId}", projectId, imageId, versionId)
-                .param("userId", userId)
+                .header("Authorization", authorization)
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.image.id").value(imageId))

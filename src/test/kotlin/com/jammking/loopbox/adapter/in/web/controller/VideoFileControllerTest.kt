@@ -2,11 +2,13 @@ package com.jammking.loopbox.adapter.`in`.web.controller
 
 import com.jammking.loopbox.adapter.`in`.web.dto.error.ErrorResponseFactory
 import com.jammking.loopbox.adapter.`in`.web.support.VideoStreamResponder
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.GetVideoFileUseCase
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.entity.user.UserId
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -36,9 +38,13 @@ class VideoFileControllerTest {
     @MockitoBean
     private lateinit var errorResponseFactory: ErrorResponseFactory
 
+    @MockitoBean
+    private lateinit var authenticatedUserResolver: AuthenticatedUserResolver
+
     @Test
     fun `streamVideo should return response from responder`() {
         val userId = "user-1"
+        val accessToken = "access-token"
         val projectId = "project-1"
         val target = GetVideoFileUseCase.VideoStreamTarget(
             path = Path.of("dummy"),
@@ -54,9 +60,10 @@ class VideoFileControllerTest {
             .thenReturn(target)
         whenever(videoStreamResponder.respond(eq(target), any()))
             .thenReturn(responseEntity)
+        whenever(authenticatedUserResolver.resolve(anyOrNull(), anyOrNull())).thenReturn(UserId(userId))
 
         mockMvc.perform(get("/api/project/{projectId}/video/file", projectId)
-            .param("userId", userId))
+            .param("accessToken", accessToken))
             .andExpect(status().isOk)
 
         verify(getVideoFileUseCase).getVideoTarget(UserId(userId), ProjectId(projectId))

@@ -43,6 +43,7 @@ enum class ErrorCode {
     INVALID_VIDEO_EDIT,
     INVALID_USER_EMAIL,
     INVALID_USER_PASSWORD,
+    UNAUTHORIZED,
     INVALID_CREDENTIALS,
 
     // --- Fallback ---

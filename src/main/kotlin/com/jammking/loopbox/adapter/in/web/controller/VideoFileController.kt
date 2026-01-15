@@ -1,9 +1,9 @@
 package com.jammking.loopbox.adapter.`in`.web.controller
 
 import com.jammking.loopbox.adapter.`in`.web.support.VideoStreamResponder
+import com.jammking.loopbox.adapter.`in`.web.support.AuthenticatedUserResolver
 import com.jammking.loopbox.application.port.`in`.GetVideoFileUseCase
 import com.jammking.loopbox.domain.entity.project.ProjectId
-import com.jammking.loopbox.domain.entity.user.UserId
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,16 +18,19 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RequestMapping("/api/project/{projectId}/video")
 class VideoFileController(
     private val getVideoFileUseCase: GetVideoFileUseCase,
-    private val videoStreamResponder: VideoStreamResponder
+    private val videoStreamResponder: VideoStreamResponder,
+    private val authenticatedUserResolver: AuthenticatedUserResolver
 ) {
 
     @GetMapping("/file")
     fun streamVideo(
-        @RequestParam userId: String,
+        @RequestHeader("Authorization", required = false) authorization: String?,
+        @RequestParam(required = false) accessToken: String?,
         @PathVariable projectId: String,
         @RequestHeader headers: HttpHeaders
     ): ResponseEntity<StreamingResponseBody> {
-        val target = getVideoFileUseCase.getVideoTarget(UserId(userId), ProjectId(projectId))
+        val userId = authenticatedUserResolver.resolve(authorization, accessToken)
+        val target = getVideoFileUseCase.getVideoTarget(userId, ProjectId(projectId))
         return videoStreamResponder.respond(target, headers)
     }
 }

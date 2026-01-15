@@ -42,6 +42,7 @@ object HttpStatusMapper {
         ErrorCode.INVALID_VIDEO_EDIT -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_USER_EMAIL -> HttpStatus.BAD_REQUEST
         ErrorCode.INVALID_USER_PASSWORD -> HttpStatus.BAD_REQUEST
+        ErrorCode.UNAUTHORIZED -> HttpStatus.UNAUTHORIZED
         ErrorCode.INVALID_CREDENTIALS -> HttpStatus.UNAUTHORIZED
 
         ErrorCode.INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
