@@ -14,6 +14,7 @@ import com.jammking.loopbox.domain.entity.image.ImageConfig
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.entity.task.ImageAiProvider
 import com.jammking.loopbox.domain.exception.task.InvalidImageAiProvider
 import org.springframework.web.bind.annotation.DeleteMapping

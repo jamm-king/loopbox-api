@@ -11,6 +11,7 @@ import com.jammking.loopbox.application.port.`in`.VideoQueryUseCase
 import com.jammking.loopbox.domain.entity.image.ImageVersionId
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.entity.project.ProjectId
+import com.jammking.loopbox.domain.entity.user.UserId
 import org.springframework.web.bind.annotation.*
 
 @RestController
