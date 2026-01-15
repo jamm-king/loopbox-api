@@ -4,6 +4,7 @@ import com.jammking.loopbox.application.port.`in`.VideoManagementUseCase
 import com.jammking.loopbox.domain.entity.video.Video
 import com.jammking.loopbox.domain.entity.video.VideoImageGroup
 import com.jammking.loopbox.domain.entity.video.VideoSegment
+import com.jammking.loopbox.domain.entity.video.VideoStatus
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.exception.image.ImageVersionNotFoundException
 import com.jammking.loopbox.domain.exception.music.MusicVersionNotFoundException
@@ -73,22 +74,24 @@ class VideoManagementService(
         val video = videoRepository.findByProjectId(projectId)
             ?: throw VideoNotFoundException.byProjectId(projectId)
 
-        video.startRender()
-        val saved = videoRepository.save(video)
-
-        val renderCommand = buildRenderCommand(projectId, saved)
-        log.info(
-            "Queued video render: projectId={}, videoId={}, segments={}, imageGroups={}",
-            projectId.value, saved.id.value, renderCommand.segments.size, renderCommand.imageGroups.size
-        )
-
+        var renderStarted = false
         return try {
+            val renderCommand = buildRenderCommand(projectId, video)
+            video.startRender()
+            renderStarted = true
+            val saved = videoRepository.save(video)
+            log.info(
+                "Queued video render: projectId={}, videoId={}, segments={}, imageGroups={}",
+                projectId.value, saved.id.value, renderCommand.segments.size, renderCommand.imageGroups.size
+            )
             videoRenderClient.requestRender(renderCommand)
             saved
         } catch(e: Exception) {
             log.error("Failed to request video render: projectId={}, reason={}", projectId.value, e.message, e)
-            saved.failRender()
-            videoRepository.save(saved)
+            if (renderStarted && video.status == VideoStatus.RENDERING) {
+                video.failRender()
+                videoRepository.save(video)
+            }
             throw e
         }
     }
