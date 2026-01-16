@@ -4,10 +4,12 @@ import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersion
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
 
 @Repository
+@Profile("inmemory")
 class InMemoryMusicVersionRepository: MusicVersionRepository {
 
     private val store = ConcurrentHashMap<String, MusicVersion>()
