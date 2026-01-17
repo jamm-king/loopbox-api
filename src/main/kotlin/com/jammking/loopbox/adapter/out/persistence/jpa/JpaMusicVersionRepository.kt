@@ -6,9 +6,11 @@ import com.jammking.loopbox.domain.entity.music.MusicId
 import com.jammking.loopbox.domain.entity.music.MusicVersion
 import com.jammking.loopbox.domain.entity.music.MusicVersionId
 import com.jammking.loopbox.domain.port.out.MusicVersionRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 
 @Repository
+@Profile("postgresql")
 class JpaMusicVersionRepository(
     private val repository: MusicVersionJpaRepository
 ) : MusicVersionRepository {

@@ -6,9 +6,11 @@ import com.jammking.loopbox.domain.entity.image.Image
 import com.jammking.loopbox.domain.entity.image.ImageId
 import com.jammking.loopbox.domain.entity.project.ProjectId
 import com.jammking.loopbox.domain.port.out.ImageRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 
 @Repository
+@Profile("postgresql")
 class JpaImageRepository(
     private val repository: ImageJpaRepository
 ) : ImageRepository {

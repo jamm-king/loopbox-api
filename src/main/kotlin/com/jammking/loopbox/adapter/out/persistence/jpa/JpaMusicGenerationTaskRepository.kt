@@ -9,10 +9,12 @@ import com.jammking.loopbox.domain.entity.task.MusicGenerationTask
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskId
 import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskStatus
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Repository
+@Profile("postgresql")
 class JpaMusicGenerationTaskRepository(
     private val repository: MusicGenerationTaskJpaRepository
 ) : MusicGenerationTaskRepository {

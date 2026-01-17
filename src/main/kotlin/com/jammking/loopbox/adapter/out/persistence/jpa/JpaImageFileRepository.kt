@@ -5,9 +5,11 @@ import com.jammking.loopbox.adapter.out.persistence.jpa.repository.ImageFileJpaR
 import com.jammking.loopbox.domain.entity.file.ImageFile
 import com.jammking.loopbox.domain.entity.file.ImageFileId
 import com.jammking.loopbox.domain.port.out.ImageFileRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 
 @Repository
+@Profile("postgresql")
 class JpaImageFileRepository(
     private val repository: ImageFileJpaRepository
 ) : ImageFileRepository {

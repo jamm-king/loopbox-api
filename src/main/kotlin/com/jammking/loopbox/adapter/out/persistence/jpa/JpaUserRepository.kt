@@ -5,9 +5,11 @@ import com.jammking.loopbox.adapter.out.persistence.jpa.repository.UserJpaReposi
 import com.jammking.loopbox.domain.entity.user.User
 import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.port.out.UserRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 
 @Repository
+@Profile("postgresql")
 class JpaUserRepository(
     private val repository: UserJpaRepository
 ) : UserRepository {

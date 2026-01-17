@@ -9,10 +9,12 @@ import com.jammking.loopbox.domain.entity.task.ImageGenerationTask
 import com.jammking.loopbox.domain.entity.task.ImageGenerationTaskId
 import com.jammking.loopbox.domain.entity.task.ImageGenerationTaskStatus
 import com.jammking.loopbox.domain.port.out.ImageGenerationTaskRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Repository
+@Profile("postgresql")
 class JpaImageGenerationTaskRepository(
     private val repository: ImageGenerationTaskJpaRepository
 ) : ImageGenerationTaskRepository {

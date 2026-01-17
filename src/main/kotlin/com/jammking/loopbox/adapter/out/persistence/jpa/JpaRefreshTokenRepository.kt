@@ -5,9 +5,11 @@ import com.jammking.loopbox.adapter.out.persistence.jpa.repository.RefreshTokenJ
 import com.jammking.loopbox.domain.entity.auth.RefreshToken
 import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.port.out.RefreshTokenRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 
 @Repository
+@Profile("postgresql")
 class JpaRefreshTokenRepository(
     private val repository: RefreshTokenJpaRepository
 ) : RefreshTokenRepository {
