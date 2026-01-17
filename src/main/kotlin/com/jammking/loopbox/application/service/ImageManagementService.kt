@@ -30,7 +30,8 @@ class ImageManagementService(
     private val imageRepository: ImageRepository,
     private val versionRepository: ImageVersionRepository,
     private val taskRepository: ImageGenerationTaskRepository,
-    private val imageAiRouter: ImageAiRouter
+    private val imageAiRouter: ImageAiRouter,
+    private val imageFailureStateService: ImageFailureStateService
 ): ImageManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -107,9 +108,7 @@ class ImageManagementService(
             savedImage
         } catch(e: Exception) {
             log.error("Failed to request version generation: imageId={}, reason={}", savedImage.id.value, e.message, e)
-
-            savedImage.failVersionGeneration()
-            imageRepository.save(savedImage)
+            imageFailureStateService.markVersionGenerationFailed(savedImage)
 
             throw e
         }

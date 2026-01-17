@@ -42,7 +42,8 @@ class VideoManagementService(
     private val audioFileRepository: AudioFileRepository,
     private val imageFileRepository: ImageFileRepository,
     private val videoFileStorage: VideoFileStorage,
-    private val videoRenderClient: VideoRenderClient
+    private val videoRenderClient: VideoRenderClient,
+    private val videoRenderFailureService: VideoRenderFailureService
 ): VideoManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -107,8 +108,7 @@ class VideoManagementService(
         } catch(e: Exception) {
             log.error("Failed to request video render: projectId={}, reason={}", projectId.value, e.message, e)
             if (renderStarted && video.status == VideoStatus.RENDERING) {
-                video.failRender()
-                videoRepository.save(video)
+                videoRenderFailureService.markRenderFailed(video)
             }
             throw e
         }

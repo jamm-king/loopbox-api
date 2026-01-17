@@ -31,10 +31,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.InjectMocks
 import org.mockito.Mock
-import org.mockito.Mockito.times
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -58,6 +58,9 @@ class MusicManagementServiceTest {
 
     @Mock
     private lateinit var musicAiClient: MusicAiClient
+
+    @Mock
+    private lateinit var musicFailureStateService: MusicFailureStateService
 
     @InjectMocks
     private lateinit var musicManagementService: MusicManagementService
@@ -188,12 +191,17 @@ class MusicManagementServiceTest {
         whenever(musicAiRouter.getClient(MusicAiProvider.SUNO)).thenReturn(musicAiClient)
         whenever(musicAiClient.generate(any()))
             .thenThrow(IllegalStateException("boom"))
+        doAnswer { invocation ->
+            val target = invocation.arguments[0] as Music
+            target.failVersionGeneration()
+            null
+        }.whenever(musicFailureStateService).markVersionGenerationFailed(any())
 
         // When & Then
         assertThrows(IllegalStateException::class.java) {
             musicManagementService.generateVersion(command)
         }
-        verify(musicRepository, times(2)).save(music)
+        verify(musicFailureStateService).markVersionGenerationFailed(music)
         assertEquals(MusicStatus.FAILED, music.status)
         assertEquals(MusicOperation.GENERATE_VERSION, music.lastOperation)
     }

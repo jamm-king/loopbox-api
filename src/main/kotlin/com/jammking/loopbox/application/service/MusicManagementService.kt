@@ -31,7 +31,8 @@ class MusicManagementService(
     private val musicRepository: MusicRepository,
     private val versionRepository: MusicVersionRepository,
     private val taskRepository: MusicGenerationTaskRepository,
-    private val musicAiRouter: MusicAiRouter
+    private val musicAiRouter: MusicAiRouter,
+    private val musicFailureStateService: MusicFailureStateService
 ): MusicManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -133,9 +134,7 @@ class MusicManagementService(
             savedMusic
         } catch(e: Exception) {
             log.error("Failed to request version generation: musicId={}, reason={}", savedMusic.id.value, e.message, e)
-
-            savedMusic.failVersionGeneration()
-            musicRepository.save(savedMusic)
+            musicFailureStateService.markVersionGenerationFailed(savedMusic)
 
             throw e
         }
