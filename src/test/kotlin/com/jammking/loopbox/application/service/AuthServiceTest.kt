@@ -9,6 +9,7 @@ import com.jammking.loopbox.domain.exception.user.InvalidUserPasswordException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
@@ -121,6 +122,29 @@ class AuthServiceTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `login should revoke previous refresh tokens`() {
+        // Given
+        val signup = authService.signup(
+            AuthUseCase.SignupCommand(
+                email = "revoke@example.com",
+                password = "password123"
+            )
+        )
+
+        // When
+        val result = authService.login(
+            AuthUseCase.LoginCommand(
+                email = "revoke@example.com",
+                password = "password123"
+            )
+        )
+
+        // Then
+        assertNull(refreshTokenRepository.findByToken(signup.tokens.refreshToken))
+        assertNotNull(refreshTokenRepository.findByToken(result.tokens.refreshToken))
     }
 
     @Test

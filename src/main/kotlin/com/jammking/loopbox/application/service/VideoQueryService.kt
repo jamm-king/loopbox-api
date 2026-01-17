@@ -10,6 +10,7 @@ import com.jammking.loopbox.domain.exception.project.ProjectNotFoundException
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import com.jammking.loopbox.domain.port.out.VideoRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class VideoQueryService(
@@ -17,6 +18,7 @@ class VideoQueryService(
     private val videoRepository: VideoRepository
 ): VideoQueryUseCase {
 
+    @Transactional
     override fun getVideoDetail(userId: UserId, projectId: ProjectId): Video {
         val project = projectRepository.findById(projectId)
             ?: throw ProjectNotFoundException.byProjectId(projectId)

@@ -5,10 +5,12 @@ import com.jammking.loopbox.domain.entity.task.MusicGenerationTaskStatus
 import com.jammking.loopbox.domain.port.out.MusicGenerationTaskRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
 
 @Service
+@Transactional
 class PurgeCanceledMusicTasksService(
     private val taskRepository: MusicGenerationTaskRepository
 ): PurgeCanceledMusicTasksUseCase {

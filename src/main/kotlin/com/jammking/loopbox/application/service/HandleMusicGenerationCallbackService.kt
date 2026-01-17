@@ -20,9 +20,11 @@ import com.jammking.loopbox.domain.exception.task.MusicGenerationTaskNotFoundExc
 import com.jammking.loopbox.domain.port.out.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 @Service
+@Transactional
 class HandleMusicGenerationCallbackService(
     private val projectRepository: ProjectRepository,
     private val musicRepository: MusicRepository,
