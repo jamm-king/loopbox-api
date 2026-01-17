@@ -3,10 +3,12 @@ package com.jammking.loopbox.adapter.out.persistence.inmemeory
 import com.jammking.loopbox.domain.entity.user.User
 import com.jammking.loopbox.domain.entity.user.UserId
 import com.jammking.loopbox.domain.port.out.UserRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
 
 @Repository
+@Profile("inmemory")
 class InMemoryUserRepository: UserRepository {
 
     private val store = ConcurrentHashMap<String, User>()

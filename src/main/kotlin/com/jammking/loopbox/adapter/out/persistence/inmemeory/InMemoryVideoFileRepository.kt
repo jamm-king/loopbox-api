@@ -3,10 +3,12 @@ package com.jammking.loopbox.adapter.out.persistence.inmemeory
 import com.jammking.loopbox.domain.entity.file.VideoFile
 import com.jammking.loopbox.domain.entity.file.VideoFileId
 import com.jammking.loopbox.domain.port.out.VideoFileRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
 
 @Repository
+@Profile("inmemory")
 class InMemoryVideoFileRepository: VideoFileRepository {
 
     private val store = ConcurrentHashMap<String, VideoFile>()

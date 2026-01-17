@@ -3,10 +3,12 @@ package com.jammking.loopbox.adapter.out.persistence.inmemeory
 import com.jammking.loopbox.domain.entity.file.ImageFile
 import com.jammking.loopbox.domain.entity.file.ImageFileId
 import com.jammking.loopbox.domain.port.out.ImageFileRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
 
 @Repository
+@Profile("inmemory")
 class InMemoryImageFileRepository: ImageFileRepository {
 
     private val store = ConcurrentHashMap<String, ImageFile>()
