@@ -17,8 +17,10 @@ import com.jammking.loopbox.domain.port.out.ImageVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class ImageQueryService(
     private val imageRepository: ImageRepository,
     private val versionRepository: ImageVersionRepository,

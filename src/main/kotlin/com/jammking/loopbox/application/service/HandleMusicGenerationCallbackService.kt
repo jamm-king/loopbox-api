@@ -20,9 +20,11 @@ import com.jammking.loopbox.domain.exception.task.MusicGenerationTaskNotFoundExc
 import com.jammking.loopbox.domain.port.out.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 @Service
+@Transactional
 class HandleMusicGenerationCallbackService(
     private val projectRepository: ProjectRepository,
     private val musicRepository: MusicRepository,
@@ -145,15 +147,22 @@ class HandleMusicGenerationCallbackService(
             savedMusic.id.value, savedTask.id.value, savedVersions.size
         )
 
-        notificationPort.notifyVersionGenerationCompleted(
-            projectId = savedProject.id,
-            musicId = savedMusic.id,
-            versionIds = savedVersions.map { it.id }
-        )
-        log.info(
-            "Notified music generation completion: projectId={}, musicId={}",
-            savedProject.id.value, savedMusic.id.value
-        )
+        try {
+            notificationPort.notifyVersionGenerationCompleted(
+                projectId = savedProject.id,
+                musicId = savedMusic.id,
+                versionIds = savedVersions.map { it.id }
+            )
+            log.info(
+                "Notified music generation completion: projectId={}, musicId={}",
+                savedProject.id.value, savedMusic.id.value
+            )
+        } catch (e: Exception) {
+            log.warn(
+                "Failed to notify music generation completion: projectId={}, musicId={}, reason={}",
+                savedProject.id.value, savedMusic.id.value, e.message
+            )
+        }
     }
 
     private fun handleFailed(
@@ -184,14 +193,21 @@ class HandleMusicGenerationCallbackService(
             savedMusic.id.value, savedTask.id.value, savedVersion.id.value, command.message
         )
 
-        notificationPort.notifyVersionGenerationFailed(
-            projectId = project.id,
-            musicId = music.id
-        )
-        log.info(
-            "Notified music generation failure: projectId={}, musicId={}",
-            project.id.value, music.id.value
-        )
+        try {
+            notificationPort.notifyVersionGenerationFailed(
+                projectId = project.id,
+                musicId = music.id
+            )
+            log.info(
+                "Notified music generation failure: projectId={}, musicId={}",
+                project.id.value, music.id.value
+            )
+        } catch (e: Exception) {
+            log.warn(
+                "Failed to notify music generation failure: projectId={}, musicId={}, reason={}",
+                project.id.value, music.id.value, e.message
+            )
+        }
     }
 
     private fun requireTaskByProviderAndExternalId(provider: MusicAiProvider, externalId: ExternalId): MusicGenerationTask {

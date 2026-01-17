@@ -71,6 +71,9 @@ class VideoManagementServiceTest {
     @Mock
     private lateinit var videoRenderClient: VideoRenderClient
 
+    @Mock
+    private lateinit var videoRenderFailureService: VideoRenderFailureService
+
     @InjectMocks
     private lateinit var videoManagementService: VideoManagementService
 

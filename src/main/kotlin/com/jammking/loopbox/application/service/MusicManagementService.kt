@@ -22,14 +22,17 @@ import com.jammking.loopbox.domain.port.out.MusicVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class MusicManagementService(
     private val projectRepository: ProjectRepository,
     private val musicRepository: MusicRepository,
     private val versionRepository: MusicVersionRepository,
     private val taskRepository: MusicGenerationTaskRepository,
-    private val musicAiRouter: MusicAiRouter
+    private val musicAiRouter: MusicAiRouter,
+    private val musicFailureStateService: MusicFailureStateService
 ): MusicManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -131,9 +134,7 @@ class MusicManagementService(
             savedMusic
         } catch(e: Exception) {
             log.error("Failed to request version generation: musicId={}, reason={}", savedMusic.id.value, e.message, e)
-
-            savedMusic.failVersionGeneration()
-            musicRepository.save(savedMusic)
+            musicFailureStateService.markVersionGenerationFailed(savedMusic)
 
             throw e
         }

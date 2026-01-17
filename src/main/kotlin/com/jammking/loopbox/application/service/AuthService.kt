@@ -10,6 +10,7 @@ import com.jammking.loopbox.domain.port.out.RefreshTokenRepository
 import com.jammking.loopbox.domain.port.out.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.SecretKeyFactory
@@ -19,12 +20,14 @@ import javax.crypto.spec.PBEKeySpec
 class AuthService(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
+    private val refreshTokenCleanupService: RefreshTokenCleanupService,
     private val jwtTokenProvider: JwtTokenProvider
 ): AuthUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val secureRandom = SecureRandom()
 
+    @Transactional
     override fun signup(command: AuthUseCase.SignupCommand): AuthUseCase.AuthResult {
         val normalizedEmail = normalizeEmail(command.email)
         validatePassword(command.password)
@@ -48,6 +51,7 @@ class AuthService(
         return AuthUseCase.AuthResult(saved, tokens)
     }
 
+    @Transactional
     override fun login(command: AuthUseCase.LoginCommand): AuthUseCase.AuthResult {
         val normalizedEmail = normalizeEmail(command.email)
         val user = userRepository.findByEmail(normalizedEmail)
@@ -64,6 +68,7 @@ class AuthService(
         return AuthUseCase.AuthResult(user, tokens)
     }
 
+    @Transactional
     override fun refresh(command: AuthUseCase.RefreshCommand): AuthUseCase.AuthResult {
         val claims = try {
             jwtTokenProvider.parseAndValidate(command.refreshToken, "refresh")
@@ -74,7 +79,7 @@ class AuthService(
         val stored = refreshTokenRepository.findByToken(command.refreshToken)
             ?: throw InvalidCredentialsException()
         if (stored.expiresAt.isBefore(java.time.Instant.now())) {
-            refreshTokenRepository.deleteByToken(command.refreshToken)
+            refreshTokenCleanupService.deleteByToken(command.refreshToken)
             throw InvalidCredentialsException()
         }
 
@@ -87,6 +92,7 @@ class AuthService(
         return AuthUseCase.AuthResult(user, tokens)
     }
 
+    @Transactional
     override fun logout(command: AuthUseCase.LogoutCommand) {
         val claims = try {
             jwtTokenProvider.parseAndValidate(command.refreshToken, "refresh")

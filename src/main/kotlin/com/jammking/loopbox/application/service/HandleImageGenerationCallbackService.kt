@@ -24,9 +24,11 @@ import com.jammking.loopbox.domain.port.out.ImageVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 @Service
+@Transactional
 class HandleImageGenerationCallbackService(
     private val projectRepository: ProjectRepository,
     private val imageRepository: ImageRepository,
@@ -147,15 +149,22 @@ class HandleImageGenerationCallbackService(
             savedImage.id.value, savedTask.id.value, savedVersions.size
         )
 
-        notificationPort.notifyImageVersionGenerationCompleted(
-            projectId = project.id,
-            imageId = savedImage.id,
-            versionIds = savedVersions.map { it.id }
-        )
-        log.info(
-            "Notified image generation completion: projectId={}, imageId={}",
-            project.id.value, savedImage.id.value
-        )
+        try {
+            notificationPort.notifyImageVersionGenerationCompleted(
+                projectId = project.id,
+                imageId = savedImage.id,
+                versionIds = savedVersions.map { it.id }
+            )
+            log.info(
+                "Notified image generation completion: projectId={}, imageId={}",
+                project.id.value, savedImage.id.value
+            )
+        } catch (e: Exception) {
+            log.warn(
+                "Failed to notify image generation completion: projectId={}, imageId={}, reason={}",
+                project.id.value, savedImage.id.value, e.message
+            )
+        }
     }
 
     private fun handleFailed(
@@ -186,14 +195,21 @@ class HandleImageGenerationCallbackService(
             savedImage.id.value, savedTask.id.value, savedVersion.id.value, command.message
         )
 
-        notificationPort.notifyImageVersionGenerationFailed(
-            projectId = project.id,
-            imageId = image.id
-        )
-        log.info(
-            "Notified image generation failure: projectId={}, imageId={}",
-            project.id.value, image.id.value
-        )
+        try {
+            notificationPort.notifyImageVersionGenerationFailed(
+                projectId = project.id,
+                imageId = image.id
+            )
+            log.info(
+                "Notified image generation failure: projectId={}, imageId={}",
+                project.id.value, image.id.value
+            )
+        } catch (e: Exception) {
+            log.warn(
+                "Failed to notify image generation failure: projectId={}, imageId={}, reason={}",
+                project.id.value, image.id.value, e.message
+            )
+        }
     }
 
     private fun requireTaskByProviderAndExternalId(provider: ImageAiProvider, externalId: ExternalId): ImageGenerationTask {

@@ -30,10 +30,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.InjectMocks
 import org.mockito.Mock
-import org.mockito.Mockito.times
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -57,6 +57,9 @@ class ImageManagementServiceTest {
 
     @Mock
     private lateinit var imageAiClient: ImageAiClient
+
+    @Mock
+    private lateinit var imageFailureStateService: ImageFailureStateService
 
     @InjectMocks
     private lateinit var imageManagementService: ImageManagementService
@@ -157,12 +160,17 @@ class ImageManagementServiceTest {
         whenever(imageAiRouter.getClient(ImageAiProvider.REPLICATE_GOOGLE_IMAGEN_4)).thenReturn(imageAiClient)
         whenever(imageAiClient.generate(any()))
             .thenThrow(IllegalStateException("boom"))
+        doAnswer { invocation ->
+            val target = invocation.arguments[0] as Image
+            target.failVersionGeneration()
+            null
+        }.whenever(imageFailureStateService).markVersionGenerationFailed(any())
 
         // When & Then
         assertThrows(IllegalStateException::class.java) {
             imageManagementService.generateVersion(command)
         }
-        verify(imageRepository, times(2)).save(image)
+        verify(imageFailureStateService).markVersionGenerationFailed(image)
         assertEquals(ImageStatus.FAILED, image.status)
         assertEquals(ImageOperation.GENERATE_VERSION, image.lastOperation)
     }

@@ -21,14 +21,17 @@ import com.jammking.loopbox.domain.port.out.ImageVersionRepository
 import com.jammking.loopbox.domain.port.out.ProjectRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class ImageManagementService(
     private val projectRepository: ProjectRepository,
     private val imageRepository: ImageRepository,
     private val versionRepository: ImageVersionRepository,
     private val taskRepository: ImageGenerationTaskRepository,
-    private val imageAiRouter: ImageAiRouter
+    private val imageAiRouter: ImageAiRouter,
+    private val imageFailureStateService: ImageFailureStateService
 ): ImageManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -105,9 +108,7 @@ class ImageManagementService(
             savedImage
         } catch(e: Exception) {
             log.error("Failed to request version generation: imageId={}, reason={}", savedImage.id.value, e.message, e)
-
-            savedImage.failVersionGeneration()
-            imageRepository.save(savedImage)
+            imageFailureStateService.markVersionGenerationFailed(savedImage)
 
             throw e
         }

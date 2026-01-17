@@ -28,8 +28,10 @@ import com.jammking.loopbox.domain.port.out.AudioFileRepository
 import com.jammking.loopbox.domain.port.out.ImageFileRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class VideoManagementService(
     private val projectRepository: ProjectRepository,
     private val videoRepository: VideoRepository,
@@ -40,7 +42,8 @@ class VideoManagementService(
     private val audioFileRepository: AudioFileRepository,
     private val imageFileRepository: ImageFileRepository,
     private val videoFileStorage: VideoFileStorage,
-    private val videoRenderClient: VideoRenderClient
+    private val videoRenderClient: VideoRenderClient,
+    private val videoRenderFailureService: VideoRenderFailureService
 ): VideoManagementUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -105,8 +108,7 @@ class VideoManagementService(
         } catch(e: Exception) {
             log.error("Failed to request video render: projectId={}, reason={}", projectId.value, e.message, e)
             if (renderStarted && video.status == VideoStatus.RENDERING) {
-                video.failRender()
-                videoRepository.save(video)
+                videoRenderFailureService.markRenderFailed(video)
             }
             throw e
         }

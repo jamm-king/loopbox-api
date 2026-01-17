@@ -14,8 +14,10 @@ import com.jammking.loopbox.domain.port.out.ProjectRepository
 import com.jammking.loopbox.domain.port.out.VideoFileRepository
 import com.jammking.loopbox.domain.port.out.VideoRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class GetVideoFileService(
     private val projectRepository: ProjectRepository,
     private val videoRepository: VideoRepository,
