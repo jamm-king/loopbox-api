@@ -20,6 +20,7 @@ import javax.crypto.spec.PBEKeySpec
 class AuthService(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
+    private val refreshTokenCleanupService: RefreshTokenCleanupService,
     private val jwtTokenProvider: JwtTokenProvider
 ): AuthUseCase {
 
@@ -78,7 +79,7 @@ class AuthService(
         val stored = refreshTokenRepository.findByToken(command.refreshToken)
             ?: throw InvalidCredentialsException()
         if (stored.expiresAt.isBefore(java.time.Instant.now())) {
-            refreshTokenRepository.deleteByToken(command.refreshToken)
+            refreshTokenCleanupService.deleteByToken(command.refreshToken)
             throw InvalidCredentialsException()
         }
 

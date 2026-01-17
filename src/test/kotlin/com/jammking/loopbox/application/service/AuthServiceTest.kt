@@ -3,6 +3,7 @@ package com.jammking.loopbox.application.service
 import com.jammking.loopbox.application.port.`in`.AuthUseCase
 import com.jammking.loopbox.adapter.out.persistence.inmemeory.InMemoryRefreshTokenRepository
 import com.jammking.loopbox.adapter.out.persistence.inmemeory.InMemoryUserRepository
+import com.jammking.loopbox.domain.entity.auth.RefreshToken
 import com.jammking.loopbox.domain.exception.user.DuplicateUserEmailException
 import com.jammking.loopbox.domain.exception.user.InvalidCredentialsException
 import com.jammking.loopbox.domain.exception.user.InvalidUserPasswordException
@@ -12,11 +13,13 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class AuthServiceTest {
 
     private val userRepository = InMemoryUserRepository()
     private val refreshTokenRepository = InMemoryRefreshTokenRepository()
+    private val refreshTokenCleanupService = RefreshTokenCleanupService(refreshTokenRepository)
     private val jwtTokenProvider = JwtTokenProvider(
         secret = "test-secret",
         accessTokenTtlSeconds = 60,
@@ -24,7 +27,12 @@ class AuthServiceTest {
         issuer = "loopbox-test",
         audience = "loopbox-api-test"
     )
-    private val authService = AuthService(userRepository, refreshTokenRepository, jwtTokenProvider)
+    private val authService = AuthService(
+        userRepository,
+        refreshTokenRepository,
+        refreshTokenCleanupService,
+        jwtTokenProvider
+    )
 
     @Test
     fun `signup should normalize email and hash password`() {
@@ -168,6 +176,34 @@ class AuthServiceTest {
         assertEquals(signup.user.id.value, refreshed.user.id.value)
         assertNotEquals(signup.tokens.refreshToken, refreshed.tokens.refreshToken)
         assertNotEquals("", refreshed.tokens.accessToken)
+    }
+
+    @Test
+    fun `refresh should remove expired token`() {
+        // Given
+        val signup = authService.signup(
+            AuthUseCase.SignupCommand(
+                email = "expired@example.com",
+                password = "password123"
+            )
+        )
+        refreshTokenRepository.save(
+            RefreshToken(
+                token = signup.tokens.refreshToken,
+                userId = signup.user.id,
+                expiresAt = Instant.now().minusSeconds(60)
+            )
+        )
+
+        // When & Then
+        assertThrows(InvalidCredentialsException::class.java) {
+            authService.refresh(
+                AuthUseCase.RefreshCommand(
+                    refreshToken = signup.tokens.refreshToken
+                )
+            )
+        }
+        assertNull(refreshTokenRepository.findByToken(signup.tokens.refreshToken))
     }
 
     @Test
